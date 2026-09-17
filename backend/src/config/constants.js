@@ -42,7 +42,7 @@ module.exports = {
     'Cancelled'
   ],
 
-  PAYMENT_STATUSES: ['Initiated', 'Success', 'Failed', 'Refunded'],
+  PAYMENT_STATUSES: ['Pending', 'Initiated', 'Success', 'Failed', 'Refunded'],
   ESCROW_STATUSES: ['Held', 'Released', 'Partial_Deduction', 'Disputed'],
   PRODUCT_STATUSES: ['Active', 'Low Stock', 'Out of Stock', 'Draft'],
   APPROVAL_STATUSES: ['Pending', 'Approved', 'Rejected'],
