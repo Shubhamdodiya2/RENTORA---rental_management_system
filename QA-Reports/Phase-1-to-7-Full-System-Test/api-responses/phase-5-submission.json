@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "message": "Payment proof submitted successfully. Super Admin will verify and confirm your order.",
+  "data": {
+    "id": "sub-9021",
+    "orderId": "ord-8832",
+    "bookingId": "bkg-20260918-9921",
+    "customerId": "usr-cust-aarav",
+    "vendorId": "vend-pixelcraft",
+    "amount": 18405.24,
+    "paymentMethod": "UPI_MANUAL",
+    "utrNumber": "UTR999123456",
+    "payerUpiId": "aarav@okaxis",
+    "payerName": "Aarav Patel",
+    "verificationStatus": "Pending"
+  }
+}

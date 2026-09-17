@@ -1,0 +1,35 @@
+{
+  "calculationMode": "DAILY_INCLUSIVE",
+  "items": [
+    {
+      "productId": "prod-fx3-cinema",
+      "productName": "Sony FX3 Full-Frame Cinema Camera",
+      "quantity": 2,
+      "durationMode": "day",
+      "durationCount": 3,
+      "unitRate": 3000.00,
+      "subtotal": 18000.00,
+      "depositPerUnit": 5000.00,
+      "deposit": 10000.00
+    }
+  ],
+  "financialBreakdown": {
+    "pureRentalAmount": 18000.00,
+    "discountAmount": 0.00,
+    "deliveryFee": 250.00,
+    "insuranceAmount": 360.00,
+    "taxableRentalAmount": 18610.00,
+    "cgstRate": 9.0,
+    "cgstAmount": 1674.90,
+    "sgstRate": 9.0,
+    "sgstAmount": 1674.90,
+    "gstRate": 18.0,
+    "taxAmount": 3349.80,
+    "rentalPaymentAmount": 21959.80,
+    "escrowDepositAmount": 10000.00,
+    "totalCustomerPayable": 31959.80,
+    "platformCommissionRate": 10.0,
+    "platformCommissionAmount": 1800.00,
+    "vendorGrossEarnings": 16200.00
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "message": "Logged in successfully",
+  "data": {
+    "user": {
+      "id": "13b1c8d1-0d89-4400-8052-51bf9bfe09b4",
+      "fullName": "Super Admin",
+      "email": "superadmin@rentora.in",
+      "phone": "+91 98765 00001",
+      "avatarUrl": null,
+      "isActive": true,
+      "isVerified": true,
+      "mustChangePassword": false,
+      "lastLoginAt": "2026-09-17T19:30:17.839Z",
+      "createdAt": "2026-09-17T17:54:43.000Z",
+      "updatedAt": "2026-09-17T19:30:17.839Z",
+      "roles": [
+        {
+          "id": 3,
+          "name": "SUPER_ADMIN",
+          "UserRole": {
+            "id": 1,
+            "userId": "13b1c8d1-0d89-4400-8052-51bf9bfe09b4",
+            "roleId": 3,
+            "isActive": true,
+            "createdAt": "2026-09-17T17:54:43.000Z",
+            "updatedAt": "2026-09-17T17:54:43.000Z"
+          }
+        }
+      ],
+      "customerProfile": null,
+      "vendorProfile": null
+    },
+    "roles": [
+      "SUPER_ADMIN"
+    ],
+    "customerProfile": null,
+    "vendorProfile": null,
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEzYjFjOGQxLTBkODktNDQwMC04MDUyLTUxYmY5YmZlMDliNCIsImVtYWlsIjoic3VwZXJhZG1pbkByZW50b3JhLmluIiwiZnVsbE5hbWUiOiJTdXBlciBBZG1pbiIsInJvbGVzIjpbIlNVUEVSX0FETUlOIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTY3MzQxNywiZXhwIjoxNzg5Njc0MzE3fQ._eLoM1QRID-Rjej5F57_mlupZejxMqfQhFDD7LYG638",
+    "refreshToken": "e0f75e8fc8291aca2e434ca6a8dd9d2538528c7a7273a2db8265fb7df0ef12012975e006f6ed832e",
+    "mustChangePassword": false
+  },
+  "errors": null
+}

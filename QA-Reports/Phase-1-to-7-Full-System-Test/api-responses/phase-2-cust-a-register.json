@@ -1,0 +1,35 @@
+{
+  "success": true,
+  "message": "Customer account registered successfully",
+  "data": {
+    "user": {
+      "id": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+      "fullName": "Aarav Patel",
+      "email": "qa.cust.alpha.1789673414238@rentoratest.in",
+      "phone": "+91 98250 11001",
+      "isActive": true,
+      "isVerified": false,
+      "mustChangePassword": false,
+      "updatedAt": "2026-09-17T19:30:15.377Z",
+      "createdAt": "2026-09-17T19:30:15.377Z"
+    },
+    "roles": [
+      "CUSTOMER"
+    ],
+    "customerProfile": {
+      "id": "190de930-c518-4531-845e-7cfeb79e89a4",
+      "state": "Gujarat",
+      "userId": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+      "city": "Ahmedabad",
+      "kycStatus": "Pending",
+      "kycBadge": "Standard Member",
+      "trustScore": 100,
+      "updatedAt": "2026-09-17T19:30:15.402Z",
+      "createdAt": "2026-09-17T19:30:15.402Z"
+    },
+    "vendorProfile": null,
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhmMWZlYTcwLWUxMTEtNDI5Ny1hNWRkLTdkODllMjBhMjc2ZSIsImVtYWlsIjoicWEuY3VzdC5hbHBoYS4xNzg5NjczNDE0MjM4QHJlbnRvcmF0ZXN0LmluIiwiZnVsbE5hbWUiOiJBYXJhdiBQYXRlbCIsInJvbGVzIjpbIkNVU1RPTUVSIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTY3MzQxNSwiZXhwIjoxNzg5Njc0MzE1fQ.ctapNFbwCTSap_SMPqhHuFEwrPgSi1ib3hw0Ba7JW8Q",
+    "refreshToken": "f2737b3e3887717c006ac44109d139ae91fd6e22ba134872131c99b0bde23252c47dba0d94a58871"
+  },
+  "errors": null
+}

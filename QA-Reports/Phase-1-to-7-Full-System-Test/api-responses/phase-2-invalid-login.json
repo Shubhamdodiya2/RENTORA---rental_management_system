@@ -1,0 +1,6 @@
+{
+  "success": false,
+  "message": "Invalid email or password. 4 attempt(s) remaining before lockout.",
+  "data": null,
+  "errors": null
+}

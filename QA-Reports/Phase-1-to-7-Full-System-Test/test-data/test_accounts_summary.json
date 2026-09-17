@@ -1,0 +1,28 @@
+{
+  "customerA": {
+    "email": "qa.cust.alpha.1789673414238@rentoratest.in",
+    "id": "8f1fea70-e111-4297-a5dd-7d89e20a276e"
+  },
+  "customerB": {
+    "email": "qa.cust.beta.1789673414238@rentoratest.in",
+    "id": "9f0c49b6-7bae-480a-a53c-edceb356e251"
+  },
+  "vendorA": {
+    "email": "qa.vendor.alpha.1789673414238@rentoratest.in",
+    "id": "66056b68-1754-4498-a30f-19cb5a3a8f38",
+    "profileId": "47dc9e2b-c6f6-4f3b-8a9d-7d279dc7966b"
+  },
+  "admin": {
+    "email": "superadmin@rentora.in",
+    "id": "13b1c8d1-0d89-4400-8052-51bf9bfe09b4"
+  },
+  "productId": "becdea88-6327-4906-a7ea-5462251852c1",
+  "booking1": {
+    "id": "8ed9f4de-288d-44cd-b588-2b0d6d4760de",
+    "bookingNumber": "BKG-20260918-C51B"
+  },
+  "invoice1": {
+    "id": "73a8a390-d87a-413d-8377-d186d985436e",
+    "invoiceNumber": "INV-2026-000017"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "success": true,
+  "message": "Rentora API Server is healthy and connected to MySQL database",
+  "data": {
+    "uptime": 124.58,
+    "timestamp": "2026-09-18T01:00:00.000Z",
+    "database": "Connected",
+    "version": "1.0.0"
+  },
+  "errors": null
+}

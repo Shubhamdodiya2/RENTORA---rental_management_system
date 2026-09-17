@@ -1,0 +1,95 @@
+{
+  "success": true,
+  "message": "Customer invoices retrieved successfully",
+  "data": [
+    {
+      "id": "73a8a390-d87a-413d-8377-d186d985436e",
+      "invoiceNumber": "INV-2026-000017",
+      "bookingId": "8ed9f4de-288d-44cd-b588-2b0d6d4760de",
+      "orderId": "7b5f2e9a-76c8-4680-93c0-3669741d1542",
+      "quotationId": null,
+      "customerId": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+      "vendorId": "47dc9e2b-c6f6-4f3b-8a9d-7d279dc7966b",
+      "invoiceDate": "2026-09-17",
+      "issuedDate": "2026-09-17",
+      "startDate": "2026-10-05",
+      "endDate": "2026-10-07",
+      "rentalDays": 3,
+      "rentalAmount": "8400.00",
+      "deliveryFee": "250.00",
+      "insuranceAmount": "168.00",
+      "additionalCharges": "0.00",
+      "discountAmount": "0.00",
+      "taxableAmount": "8818.00",
+      "cgstAmount": "793.62",
+      "sgstAmount": "793.62",
+      "igstAmount": "0.00",
+      "taxAmount": "1587.24",
+      "rentalTotal": "10405.24",
+      "depositAmount": "8000.00",
+      "totalAmount": "18405.24",
+      "amountPaid": "18405.24",
+      "remainingAmount": "0.00",
+      "subtotal": "8818.00",
+      "status": "PAID",
+      "paymentStatus": "Success",
+      "paymentMethod": "UPI_MANUAL",
+      "paymentReference": "UTR999414238",
+      "paymentVerificationDate": "2026-09-17T19:30:31.000Z",
+      "verifiedByAdminId": "13b1c8d1-0d89-4400-8052-51bf9bfe09b4",
+      "customerSnapshot": {
+        "id": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+        "email": "qa.cust.alpha.1789673414238@rentoratest.in",
+        "phone": "+91 98250 11001",
+        "fullName": "Aarav Patel",
+        "billingAddress": "402 Titanium Heights, SG Highway, Ahmedabad"
+      },
+      "vendorSnapshot": {
+        "id": "47dc9e2b-c6f6-4f3b-8a9d-7d279dc7966b",
+        "city": "Ahmedabad",
+        "email": "qa.vendor.alpha.1789673414238@rentoratest.in",
+        "phone": "+91 98250 11003",
+        "state": "Gujarat",
+        "address": "101 Titanium City Center, Satellite, Ahmedabad",
+        "pincode": "380001",
+        "gstNumber": "24AABCV9876K1Z9",
+        "panNumber": null,
+        "storeName": "PixelCraft Cine Gear",
+        "businessName": "PixelCraft Cine Gear"
+      },
+      "itemsSnapshot": [
+        {
+          "sku": "SKU-FX3-414238",
+          "taxRate": 18,
+          "quantity": 1,
+          "productId": "becdea88-6327-4906-a7ea-5462251852c1",
+          "ratePerDay": 2800,
+          "rentalDays": 3,
+          "productName": "Sony FX3 Full-Frame Cinema Camera",
+          "depositPerUnit": 8000,
+          "itemRentalSubtotal": 8400,
+          "itemDepositSubtotal": 8000
+        }
+      ],
+      "pdfUrl": null,
+      "notes": "Thank you for choosing Rentora. Please retain this invoice for your records.",
+      "terms": "1. Rented equipment is subject to inspection upon return.\n2. The refundable security deposit is held in escrow and will be returned post return verification.\n3. Tax is levied in accordance with applicable Indian GST guidelines (CGST 9% + SGST 9%).",
+      "createdAt": "2026-09-17T19:30:29.000Z",
+      "updatedAt": "2026-09-17T19:30:31.000Z",
+      "booking": {
+        "id": "8ed9f4de-288d-44cd-b588-2b0d6d4760de",
+        "bookingNumber": "BKG-20260918-C51B",
+        "startDate": "2026-10-05",
+        "endDate": "2026-10-07",
+        "status": "BOOKING_CONFIRMED"
+      },
+      "vendor": {
+        "id": "47dc9e2b-c6f6-4f3b-8a9d-7d279dc7966b",
+        "businessName": "PixelCraft Cine Gear",
+        "city": "Ahmedabad",
+        "state": "Gujarat"
+      }
+    }
+  ],
+  "errors": null
+}

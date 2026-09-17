@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "message": "Payment approved and verified successfully. Multi-ledger records generated.",
+  "data": {
+    "submission": {
+      "id": "sub-9021",
+      "verificationStatus": "Verified",
+      "verifiedByAdminId": "usr-admin-01",
+      "verifiedAt": "2026-09-18T01:00:00.000Z",
+      "utrNumber": "UTR999123456"
+    },
+    "order": {
+      "id": "ord-8832",
+      "orderStatus": "Confirmed",
+      "paymentStatus": "Success"
+    },
+    "rentalPayment": {
+      "id": "rp-1021",
+      "transactionId": "UTR-UTR999123456",
+      "amount": 10405.24,
+      "paymentStatus": "Success"
+    },
+    "escrowDeposit": {
+      "id": "esc-1021",
+      "depositAmount": 8000.00,
+      "status": "Held"
+    },
+    "commission": {
+      "id": "comm-1021",
+      "grossAmount": 8400.00,
+      "commissionRate": 10.00,
+      "commissionAmount": 840.00,
+      "vendorEarnings": 7560.00,
+      "payoutStatus": "Pending"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "message": "Booking created and confirmed successfully",
+  "data": {
+    "id": "bkg-20260918-9921",
+    "bookingNumber": "BKG-20260918-9921",
+    "status": "BOOKING_CONFIRMED",
+    "currentStep": 1,
+    "startDate": "2026-10-05",
+    "endDate": "2026-10-07",
+    "durationMode": "day",
+    "durationCount": 3,
+    "deliveryType": "doorstep",
+    "deliveryAddress": "402 Titanium Heights, SG Highway, Ahmedabad",
+    "rentalAmount": 8400.00,
+    "deliveryFee": 250.00,
+    "insuranceAmount": 168.00,
+    "discountAmount": 0.00,
+    "taxAmount": 1587.24,
+    "depositAmount": 8000.00,
+    "totalAmount": 18405.24,
+    "paymentPlan": "full"
+  }
+}
