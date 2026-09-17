@@ -1,0 +1,38 @@
+.customer-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #F8FAFC;
+  font-family: 'Inter', sans-serif;
+  color: #1D3557;
+}
+
+.customer-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: 280px;
+  min-height: 100vh;
+  background-color: #F8FAFC;
+}
+
+.customer-content-scroll {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.customer-page-container {
+  max-width: 1360px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1024px) {
+  .customer-main-area {
+    margin-left: 0;
+  }
+
+  .customer-content-scroll {
+    padding: 1.25rem 1rem;
+  }
+}

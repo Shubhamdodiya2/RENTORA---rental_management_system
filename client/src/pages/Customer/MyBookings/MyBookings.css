@@ -1,0 +1,227 @@
+.my-bookings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bookings-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-explore-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: #E63946;
+  color: #ffffff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0.625rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.btn-explore-link:hover {
+  background-color: #d62839;
+}
+
+.bookings-filters-bar {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0.875rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.bookings-search-input {
+  border: none;
+  background: none;
+  font-size: 0.825rem;
+  color: #1D3557;
+  width: 100%;
+  outline: none;
+}
+
+.status-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-pill-btn {
+  padding: 0.4rem 0.85rem;
+  background-color: #f1f5f9;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  font-size: 0.775rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.status-pill-btn:hover {
+  color: #1D3557;
+}
+
+.pill-active {
+  background-color: #1D3557;
+  color: #ffffff;
+}
+
+/* Bookings Table */
+.bookings-table-container {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(29, 53, 87, 0.03);
+}
+
+.bookings-full-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.bookings-full-table th {
+  background-color: #f8fafc;
+  color: #64748b;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.booking-table-row {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s;
+}
+
+.booking-table-row:hover {
+  background-color: #fbfdff;
+}
+
+.booking-table-row td {
+  padding: 1.15rem 1.25rem;
+  vertical-align: middle;
+}
+
+.table-gear-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.table-gear-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 0.55rem;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.table-gear-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-gear-title {
+  font-family: 'Sora', sans-serif;
+  font-size: 0.885rem;
+  font-weight: 700;
+  color: #1D3557;
+  line-height: 1.3;
+}
+
+.table-gear-cat {
+  font-size: 0.725rem;
+  color: #64748b;
+}
+
+.table-vendor-cell, .table-dates-cell, .table-amount-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.action-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  color: #457B9D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-icon-btn:hover {
+  background-color: #F1FAEE;
+  border-color: #A8DADC;
+  color: #1D3557;
+}
+
+.action-rebook-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  background-color: #F1FAEE;
+  color: #E63946;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  font-size: 0.775rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.action-rebook-btn:hover {
+  background-color: #E63946;
+  color: #ffffff;
+  border-color: #E63946;
+}
+
+.bookings-empty-state {
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bookings-empty-state h3 {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1D3557;
+  margin: 0 0 0.35rem 0;
+}
+
+.bookings-empty-state p {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0 0 1.25rem 0;
+}

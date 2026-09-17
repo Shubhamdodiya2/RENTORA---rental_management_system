@@ -1,0 +1,36 @@
+.vendor-notifications-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.v-notif-full-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.15rem;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s;
+}
+
+.v-notif-full-row:hover {
+  background-color: #fbfdff;
+}
+
+.v-notif-row-unread {
+  background-color: #f8fafc;
+  border-left: 3px solid #E63946;
+}
+
+.v-notif-icon-box {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}

@@ -1,0 +1,31 @@
+.explore-page {
+  padding: 2rem 0 4rem 0;
+  background-color: #F1FAEE;
+  min-height: 100vh;
+}
+
+.explore-filter-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(168, 218, 220, 0.4);
+  box-shadow: 0 10px 30px -10px rgba(29, 53, 87, 0.06);
+}
+
+.explore-search-input {
+  background-color: #ffffff;
+  border: 1px solid #A8DADC;
+  border-radius: 1rem;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  width: 100%;
+  font-size: 0.875rem;
+  color: #1D3557;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.explore-search-input:focus {
+  outline: none;
+  border-color: #E63946;
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.15);
+}

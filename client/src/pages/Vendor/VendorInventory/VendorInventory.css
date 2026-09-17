@@ -1,0 +1,72 @@
+.vendor-inventory-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.inventory-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1.15rem;
+}
+
+.inv-stat-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(29, 53, 87, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+.inv-stat-lbl {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.4rem;
+}
+
+.inv-stat-val {
+  font-family: 'Sora', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 0.25rem;
+}
+
+.inv-stat-sub {
+  font-size: 0.725rem;
+  color: #94a3b8;
+}
+
+.btn-v-adjust-stock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  background-color: #F1FAEE;
+  color: #1D3557;
+  border: 1px solid #A8DADC;
+  border-radius: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-v-adjust-stock:hover {
+  background-color: #1D3557;
+  color: #ffffff;
+}
+
+@media (max-width: 1200px) {
+  .inventory-stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .inventory-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,48 @@
+.hero-section {
+  position: relative;
+  background-color: #F1FAEE;
+  overflow: hidden;
+}
+
+.hero-glow-blob-1 {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-right: -5rem;
+  margin-top: -5rem;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  background-color: rgba(168, 218, 220, 0.4);
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.hero-glow-blob-2 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  margin-left: -5rem;
+  margin-bottom: -5rem;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 9999px;
+  background-color: rgba(230, 57, 70, 0.1);
+  filter: blur(48px);
+  pointer-events: none;
+}
+
+.hero-search-card {
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 35px -10px rgba(29, 53, 87, 0.12);
+  border: 1px solid rgba(168, 218, 220, 0.5);
+}
+
+.hero-card-image-box {
+  background-color: #1D3557;
+  border: 4px solid #ffffff;
+  box-shadow: 0 25px 50px -12px rgba(29, 53, 87, 0.25);
+  border-radius: 1.5rem;
+  overflow: hidden;
+}

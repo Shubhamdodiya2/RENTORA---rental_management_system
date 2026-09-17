@@ -1,0 +1,39 @@
+.booking-page-container {
+  padding: 2rem 0 5rem 0;
+  background-color: #F1FAEE;
+  min-height: 100vh;
+}
+
+.booking-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  border: 1px solid rgba(168, 218, 220, 0.45);
+  box-shadow: 0 10px 30px -10px rgba(29, 53, 87, 0.08);
+}
+
+.payment-option-card {
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 2px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.payment-option-selected {
+  background-color: #F1FAEE;
+  border-color: #E63946;
+  box-shadow: 0 4px 15px -3px rgba(230, 57, 70, 0.2);
+}
+
+.payment-option-unselected {
+  background-color: #ffffff;
+  border-color: rgba(168, 218, 220, 0.5);
+}
+
+.payment-option-unselected:hover {
+  background-color: #F1FAEE;
+}

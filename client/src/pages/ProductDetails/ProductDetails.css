@@ -1,0 +1,49 @@
+.product-details-page {
+  padding: 2rem 0 4rem 0;
+  background-color: #F1FAEE;
+  min-height: 100vh;
+}
+
+.booking-sticky-card {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid rgba(168, 218, 220, 0.5);
+  box-shadow: 0 15px 35px -10px rgba(29, 53, 87, 0.12);
+}
+
+.spec-table-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(168, 218, 220, 0.25);
+  font-size: 0.8125rem;
+}
+
+.pricing-pill-btn {
+  padding: 0.625rem 0.5rem;
+  border-radius: 1rem;
+  font-weight: 700;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.pricing-pill-active {
+  background-color: #1D3557;
+  color: #ffffff;
+  border-color: #E63946;
+  box-shadow: 0 4px 12px rgba(29, 53, 87, 0.25);
+}
+
+.pricing-pill-inactive {
+  background-color: #F1FAEE;
+  color: #457B9D;
+  border-color: rgba(168, 218, 220, 0.5);
+}
+
+.pricing-pill-inactive:hover {
+  background-color: rgba(168, 218, 220, 0.3);
+  color: #1D3557;
+}

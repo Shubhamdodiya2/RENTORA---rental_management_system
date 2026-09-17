@@ -1,0 +1,31 @@
+.rentora-logo-container {
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+  cursor: pointer;
+}
+
+.rentora-logo-img {
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rentora-logo-container:hover .rentora-logo-img {
+  transform: scale(1.05);
+}
+
+.rentora-logo-footer-card {
+  background-color: #ffffff;
+  padding: 0.625rem 1rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(168, 218, 220, 0.4);
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease;
+}
+
+.rentora-logo-footer-card:hover {
+  transform: scale(1.04);
+}

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="coralGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF5A69" />
+      <stop offset="100%" stop-color="#E63946" />
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#457B9D" />
+      <stop offset="100%" stop-color="#1D3557" />
+    </linearGradient>
+    <linearGradient id="aquaGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C5EDEE" />
+      <stop offset="100%" stop-color="#A8DADC" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer Ring Background Subtle Glow -->
+  <circle cx="50" cy="50" r="46" stroke="#A8DADC" stroke-width="2.5" stroke-dasharray="4 6" opacity="0.6"/>
+  
+  <!-- Outer Rental Circulation Loop -->
+  <path d="M 50 12 A 38 38 0 1 1 14 60" stroke="url(#navyGrad)" stroke-width="9" stroke-linecap="round"/>
+  
+  <!-- Arrow Head on Circulation Loop -->
+  <polygon points="10,48 24,58 6,66" fill="#1D3557"/>
+  
+  <!-- Coral Red Dynamic 'R' Ribbon -->
+  <path d="M 32 82 L 32 26 C 32 26 44 24 58 24 C 70 24 78 31 78 41 C 78 51 68 56 56 56 L 36 56 M 52 56 L 72 82" 
+        stroke="url(#coralGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        
+  <!-- Soft Aqua Highlight Accent Accent dot -->
+  <circle cx="70" cy="32" r="5" fill="url(#aquaGrad)" />
+</svg>

@@ -1,0 +1,24 @@
+.document-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.document-sheet {
+  background-color: #ffffff;
+  border-radius: 1.5rem;
+  width: 100%;
+  max-width: 48rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  border: 1px solid rgba(168, 218, 220, 0.5);
+  box-shadow: 0 25px 50px -12px rgba(29, 53, 87, 0.25);
+  padding: 2.5rem;
+  position: relative;
+}

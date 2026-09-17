@@ -1,0 +1,45 @@
+.navbar-top-bar {
+  background-color: #1D3557;
+  color: #F1FAEE;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(69, 123, 157, 0.3);
+}
+
+.navbar-header {
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar-nav-capsule {
+  background-color: #F1FAEE;
+  padding: 0.375rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(168, 218, 220, 0.4);
+}
+
+.navbar-vendor-btn {
+  background: linear-gradient(135deg, rgba(168, 218, 220, 0.45) 0%, rgba(168, 218, 220, 0.2) 100%);
+  border: 1px solid rgba(69, 123, 157, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar-vendor-btn:hover {
+  background: linear-gradient(135deg, rgba(168, 218, 220, 0.7) 0%, rgba(168, 218, 220, 0.4) 100%);
+  transform: scale(1.02);
+}
+
+.navbar-cta-btn {
+  background: linear-gradient(135deg, #E63946 0%, #D62839 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(230, 57, 70, 0.35);
+  transition: all 0.2s ease-in-out;
+}
+
+.navbar-cta-btn:hover {
+  background: linear-gradient(135deg, #D62839 0%, #E63946 100%);
+  box-shadow: 0 6px 20px rgba(230, 57, 70, 0.5);
+}
