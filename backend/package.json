@@ -9,7 +9,7 @@
     "db:sync": "node src/scripts/syncDb.js",
     "db:seed": "node src/scripts/seedDb.js",
     "setup:admin": "node src/scripts/setupAdmin.js",
-    "test": "jest --detectOpenHandles"
+    "test": "node src/tests/runAllTests.js"
   },
   "keywords": [
     "rentora",

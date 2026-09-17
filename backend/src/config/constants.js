@@ -58,5 +58,7 @@ module.exports = {
   ],
   DURATION_MODES: ['hour', 'day', 'week', 'month', 'year'],
   DELIVERY_TYPES: ['doorstep', 'store_pickup'],
-  PAYMENT_PLANS: ['full', 'deposit_only', 'pay_on_delivery']
+  PAYMENT_PLANS: ['full', 'deposit_only', 'pay_on_delivery'],
+  PAYMENT_SUBMISSION_STATUSES: ['Pending', 'Under_Review', 'Verified', 'Rejected'],
+  PAYMENT_METHODS: ['UPI_MANUAL', 'BANK_TRANSFER', 'RAZORPAY']
 };

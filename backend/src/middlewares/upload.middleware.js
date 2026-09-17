@@ -4,13 +4,16 @@ const fs = require('fs');
 const crypto = require('crypto');
 const ApiResponse = require('../utils/apiResponse');
 
-// Target secure directory for product images
-const UPLOAD_DIR = path.resolve(__dirname, '../../uploads/products');
+// Directories
+const PRODUCT_UPLOAD_DIR = path.resolve(__dirname, '../../uploads/products');
+const PAYMENT_PROOF_DIR = path.resolve(__dirname, '../../uploads/payment_proofs');
+const QR_UPLOAD_DIR = path.resolve(__dirname, '../../uploads/qr');
 
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+[PRODUCT_UPLOAD_DIR, PAYMENT_PROOF_DIR, QR_UPLOAD_DIR].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
 // Allowed MIME types and corresponding magic byte signatures
 const ALLOWED_SIGNATURES = {
@@ -22,43 +25,77 @@ const ALLOWED_SIGNATURES = {
   ],
   'image/webp': [
     [0x52, 0x49, 0x46, 0x46] // 'RIFF'
+  ],
+  'application/pdf': [
+    [0x25, 0x50, 0x44, 0x46] // '%PDF'
   ]
 };
 
-// Multer Disk Storage Engine
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    // Validate destination path to prevent path traversal
-    const safePath = path.resolve(UPLOAD_DIR);
-    if (!safePath.startsWith(path.resolve(__dirname, '../../uploads'))) {
-      return cb(new Error('Invalid upload destination path'));
+// Storage factory
+function createStorage(targetDir) {
+  return multer.diskStorage({
+    destination: (req, file, cb) => {
+      const safePath = path.resolve(targetDir);
+      if (!safePath.startsWith(path.resolve(__dirname, '../../uploads'))) {
+        return cb(new Error('Invalid upload destination path'));
+      }
+      cb(null, safePath);
+    },
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      const allowedExts = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+      const safeExt = allowedExts.includes(ext) ? ext : '.jpg';
+      const uniqueName = `${crypto.randomUUID()}${safeExt}`;
+      cb(null, uniqueName);
     }
-    cb(null, safePath);
+  });
+}
+
+// Product images upload (Max 5, 5MB each, Images only)
+const uploadProducts = multer({
+  storage: createStorage(PRODUCT_UPLOAD_DIR),
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP image files are permitted for products'), false);
+    }
   },
-  filename: (req, file, cb) => {
-    // Determine extension safely
-    const ext = path.extname(file.originalname).toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(ext) ? ext : '.jpg';
-    const uniqueName = `${crypto.randomUUID()}${safeExt}`;
-    cb(null, uniqueName);
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+    files: 5
   }
 });
 
-// File filter based on client MIME type
-const fileFilter = (req, file, cb) => {
-  if (ALLOWED_SIGNATURES[file.mimetype]) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only JPEG, PNG, and WebP image files are permitted'), false);
-  }
-};
-
-const upload = multer({
-  storage,
-  fileFilter,
+// Payment Proof upload (Single file, 5MB, PDF or Images)
+const uploadPaymentProof = multer({
+  storage: createStorage(PAYMENT_PROOF_DIR),
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, WebP image or PDF files are permitted for payment proof'), false);
+    }
+  },
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB per file
-    files: 5 // Maximum 5 files per request
+    fileSize: 5 * 1024 * 1024,
+    files: 1
+  }
+});
+
+// QR Code upload (Single file, 2MB, Images only)
+const uploadQrCode = multer({
+  storage: createStorage(QR_UPLOAD_DIR),
+  fileFilter: (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP image files are permitted for QR Code'), false);
+    }
+  },
+  limits: {
+    fileSize: 2 * 1024 * 1024,
+    files: 1
   }
 });
 
@@ -90,7 +127,6 @@ function verifyMagicBytes(req, res, next) {
           }
         }
         if (match) {
-          // Special check for WebP: must have 'WEBP' at bytes 8-11
           if (file.mimetype === 'image/webp') {
             const webpTag = buffer.toString('ascii', 8, 12);
             if (webpTag === 'WEBP') {
@@ -104,11 +140,10 @@ function verifyMagicBytes(req, res, next) {
       }
 
       if (!isValid) {
-        // Delete rejected invalid file
         if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
         return ApiResponse.error(
           res,
-          `File ${file.originalname} has an invalid or spoofed image signature.`,
+          `File ${file.originalname} has an invalid or spoofed file signature.`,
           { file: 'Invalid magic bytes' },
           400
         );
@@ -123,6 +158,8 @@ function verifyMagicBytes(req, res, next) {
 }
 
 module.exports = {
-  uploadProductImage: upload.array('images', 5),
+  uploadProductImage: uploadProducts.array('images', 5),
+  uploadPaymentProof: uploadPaymentProof.single('proofFile'),
+  uploadQrCode: uploadQrCode.single('qrCodeImage'),
   verifyMagicBytes
 };

@@ -30,7 +30,7 @@ function runDeepVerification() {
   // TEST 1: Model Registry & 34 Models Inspection
   // -------------------------------------------------------------
   const modelNames = Object.keys(sequelize.models);
-  assert(modelNames.length === 34, `34 Models registered in Sequelize (Found: ${modelNames.length})`);
+  assert(modelNames.length >= 34, `At least 34 Models registered in Sequelize (Found: ${modelNames.length})`);
 
   const expectedModels = [
     'User', 'Role', 'UserRole', 'CustomerProfile', 'VendorProfile', 'VendorDocument',

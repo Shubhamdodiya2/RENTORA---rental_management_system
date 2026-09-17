@@ -35,6 +35,7 @@ const PlatformSetting = require('./platformSetting.model');
 const AuditLog = require('./auditLog.model');
 const RefreshToken = require('./refreshToken.model');
 const PasswordResetToken = require('./passwordResetToken.model');
+const PaymentSubmission = require('./paymentSubmission.model');
 
 // ==========================================
 // 1. IDENTITY, ROLES & AUTH TOKENS ASSOCIATIONS
@@ -139,6 +140,16 @@ Invoice.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
 Invoice.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
 Invoice.belongsTo(VendorProfile, { foreignKey: 'vendorId', as: 'vendor' });
 
+Order.hasMany(PaymentSubmission, { foreignKey: 'orderId', as: 'paymentSubmissions', onDelete: 'CASCADE' });
+PaymentSubmission.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
+Booking.hasMany(PaymentSubmission, { foreignKey: 'bookingId', as: 'paymentSubmissions', onDelete: 'CASCADE' });
+PaymentSubmission.belongsTo(Booking, { foreignKey: 'bookingId', as: 'booking' });
+User.hasMany(PaymentSubmission, { foreignKey: 'customerId', as: 'customerPaymentSubmissions' });
+PaymentSubmission.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
+VendorProfile.hasMany(PaymentSubmission, { foreignKey: 'vendorId', as: 'vendorPaymentSubmissions' });
+PaymentSubmission.belongsTo(VendorProfile, { foreignKey: 'vendorId', as: 'vendor' });
+PaymentSubmission.belongsTo(User, { foreignKey: 'verifiedByAdminId', as: 'verifier' });
+
 Order.hasOne(RentalAgreement, { foreignKey: 'orderId', as: 'rentalAgreement', onDelete: 'CASCADE' });
 RentalAgreement.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
 RentalAgreement.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
@@ -231,5 +242,6 @@ module.exports = {
   PlatformSetting,
   AuditLog,
   RefreshToken,
-  PasswordResetToken
+  PasswordResetToken,
+  PaymentSubmission
 };
