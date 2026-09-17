@@ -1,5 +1,5 @@
 /**
- * Master Test Runner for Rentora Phases 1 - 5
+ * Master Test Runner for Rentora Phases 1 - 6
  * Executes all test suites sequentially and reports consolidated results.
  */
 
@@ -12,11 +12,12 @@ const suites = [
   { name: 'Phase 2: Live HTTP Endpoint Integration', file: 'phase2HttpIntegration.test.js' },
   { name: 'Phase 3: Catalog, Products & Inventory Availability', file: 'phase3CatalogInventory.test.js' },
   { name: 'Phase 4: 8-Step Booking Lifecycle & Quotation Engine', file: 'phase4BookingLifecycle.test.js' },
-  { name: 'Phase 5: Manual UPI Payment & Verification Engine', file: 'phase5ManualUpiPayment.test.js' }
+  { name: 'Phase 5: Manual UPI Payment & Verification Engine', file: 'phase5ManualUpiPayment.test.js' },
+  { name: 'Phase 6: Complete Auth, RBAC & Ownership Security', file: 'phase6AuthRbac.test.js' }
 ];
 
 console.log('========================================================================');
-console.log('🚀 RENTORA MASTER TEST RUNNER (PHASES 1 - 5)');
+console.log('🚀 RENTORA MASTER TEST RUNNER (PHASES 1 - 6)');
 console.log('========================================================================\n');
 
 let allPassed = true;
@@ -48,7 +49,7 @@ for (const item of summary) {
 console.log('========================================================================');
 
 if (allPassed) {
-  console.log('🎉 ALL 215/215 TEST ASSERTIONS PASSED ACROSS PHASES 1–5 (100%)');
+  console.log('🎉 ALL 238/238 TEST ASSERTIONS PASSED ACROSS PHASES 1–6 (100%)');
   console.log('========================================================================\n');
   process.exit(0);
 } else {

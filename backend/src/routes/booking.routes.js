@@ -15,13 +15,13 @@ router.use(authenticate);
 // POST /api/v1/bookings - Customer initiates rental checkout
 router.post('/', isCustomer, BookingController.createBooking);
 
-// GET /api/v1/bookings - List customer's own bookings
-router.get('/', BookingController.getCustomerBookings);
+// GET /api/v1/bookings - List customer's own bookings (Customer-only)
+router.get('/', isCustomer, BookingController.getCustomerBookings);
 
-// GET /api/v1/bookings/:id - Single booking details with timeline & items
+// GET /api/v1/bookings/:id - Single booking details with timeline & items (Customer owner, store vendor, or Super Admin)
 router.get('/:id', BookingController.getBookingById);
 
-// PATCH /api/v1/bookings/:id/cancel - Cancel booking in early stages
-router.patch('/:id/cancel', BookingController.cancelBooking);
+// PATCH /api/v1/bookings/:id/cancel - Cancel booking in early stages (Customer-only)
+router.patch('/:id/cancel', isCustomer, BookingController.cancelBooking);
 
 module.exports = router;

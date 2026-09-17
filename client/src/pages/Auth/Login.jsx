@@ -9,7 +9,9 @@ import {
   Sparkles, 
   ShieldCheck,
   UserCheck,
-  Store
+  Store,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
 import Logo from '../../components/Logo/Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -25,46 +27,61 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [role, setRole] = useState('customer'); // 'customer' | 'vendor' | 'admin'
 
-  // If redirected from checkout/booking
-  const redirectTo = location.state?.from || (role === 'admin' ? '/admin/dashboard' : role === 'vendor' ? '/vendor/dashboard' : '/customer/dashboard');
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please enter both your registered email and password.');
       return;
     }
     setError('');
-    login(email, password, role);
-    if (role === 'admin') {
-      navigate('/admin/dashboard');
-    } else if (location.state?.from) {
-      navigate(location.state.from);
-    } else if (role === 'vendor') {
-      navigate('/vendor/dashboard');
-    } else {
-      navigate('/customer/dashboard');
+    setIsSubmitting(true);
+
+    try {
+      const result = await login(email, password);
+      
+      // Determine redirection target
+      const returnTarget = location.state?.from;
+
+      if (result.roles.includes('SUPER_ADMIN')) {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (result.roles.includes('VENDOR') && role === 'vendor') {
+        navigate('/vendor/dashboard', { replace: true });
+      } else if (returnTarget) {
+        navigate(returnTarget, { replace: true });
+      } else if (result.roles.includes('VENDOR')) {
+        navigate('/vendor/dashboard', { replace: true });
+      } else {
+        navigate('/customer/dashboard', { replace: true });
+      }
+    } catch (err) {
+      setError(err.message || 'Login failed. Please verify your credentials.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const fillDemoCustomer = () => {
     setEmail('aarav.creator@rentora.in');
-    setPassword('DemoPassword123');
+    setPassword('DemoCustomer2026!');
     setRole('customer');
+    setError('');
   };
 
   const fillDemoVendor = () => {
     setEmail('pixelcraft.owner@rentora.in');
-    setPassword('DemoVendor123');
+    setPassword('DemoVendor2026!');
     setRole('vendor');
+    setError('');
   };
 
   const fillDemoAdmin = () => {
     setEmail('superadmin@rentora.in');
-    setPassword('AdminSecure123');
+    setPassword('AdminSecure2026!');
     setRole('admin');
+    setError('');
   };
 
   return (
@@ -83,10 +100,12 @@ export default function Login() {
             </Link>
           </div>
           <h2 className="text-2xl font-extrabold text-[#1D3557] font-['Sora'] tracking-tight">
-            Welcome Back
+            {role === 'admin' ? 'Super Admin Portal' : 'Welcome Back'}
           </h2>
           <p className="text-xs text-[#457B9D]">
-            Sign in to access your rental dashboard, contracts & operations.
+            {role === 'admin'
+              ? 'Authorized administrative staff & operations login only.'
+              : 'Sign in to access your rental dashboard, contracts & operations.'}
           </p>
         </div>
 
@@ -124,7 +143,7 @@ export default function Login() {
         <div className="grid grid-cols-3 gap-1.5 bg-[#F1FAEE] p-1 rounded-xl">
           <button
             type="button"
-            onClick={() => setRole('customer')}
+            onClick={() => { setRole('customer'); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'customer' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -134,7 +153,7 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => setRole('vendor')}
+            onClick={() => { setRole('vendor'); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'vendor' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -144,7 +163,7 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => setRole('admin')}
+            onClick={() => { setRole('admin'); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'admin' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -156,8 +175,9 @@ export default function Login() {
 
         {/* Error Alert */}
         {error && (
-          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700">
-            {error}
+          <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 flex items-start gap-2">
+            <AlertCircle size={16} className="text-rose-600 flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
           </div>
         )}
 
@@ -167,16 +187,17 @@ export default function Login() {
           {/* Email */}
           <div>
             <label className="block text-xs font-bold text-[#1D3557] uppercase tracking-wider mb-1">
-              Email Address
+              {role === 'admin' ? 'Super Admin Email' : 'Email Address'}
             </label>
             <div className="relative">
               <input
                 type="email"
                 required
-                placeholder="name@example.com"
+                placeholder={role === 'admin' ? 'admin@rentora.in' : 'name@example.com'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="auth-input-field"
+                disabled={isSubmitting}
               />
               <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#457B9D]" />
             </div>
@@ -188,9 +209,11 @@ export default function Login() {
               <label className="text-xs font-bold text-[#1D3557] uppercase tracking-wider">
                 Password
               </label>
-              <Link to="/forgot-password" className="text-xs font-bold text-[#E63946] hover:underline">
-                Forgot password?
-              </Link>
+              {role !== 'admin' && (
+                <Link to="/forgot-password" className="text-xs font-bold text-[#E63946] hover:underline">
+                  Forgot password?
+                </Link>
+              )}
             </div>
             <div className="relative">
               <input
@@ -200,6 +223,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="auth-input-field pr-10"
+                disabled={isSubmitting}
               />
               <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#457B9D]" />
               <button
@@ -225,23 +249,39 @@ export default function Login() {
             </label>
           </div>
 
-          {/* Submit */}
+          {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3.5 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white font-bold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+            disabled={isSubmitting}
+            className="w-full py-3.5 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white font-bold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-md active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
           >
-            <span>Log In to Rentora</span>
-            <ArrowRight size={16} />
+            {isSubmitting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Verifying Credentials...</span>
+              </>
+            ) : (
+              <>
+                <span>{role === 'admin' ? 'Access Super Admin Panel' : 'Log In to Rentora'}</span>
+                <ArrowRight size={16} />
+              </>
+            )}
           </button>
         </form>
 
-        {/* Footer */}
-        <div className="text-center pt-2 border-t border-gray-100 text-xs text-[#457B9D]">
-          Don't have an account yet?{' '}
-          <Link to="/signup" className="font-bold text-[#E63946] hover:underline">
-            Create an Account
-          </Link>
-        </div>
+        {/* Footer: Hide signup option on Super Admin login screen */}
+        {role !== 'admin' ? (
+          <div className="text-center pt-2 border-t border-gray-100 text-xs text-[#457B9D]">
+            Don't have an account yet?{' '}
+            <Link to="/signup" className="font-bold text-[#E63946] hover:underline">
+              Create an Account
+            </Link>
+          </div>
+        ) : (
+          <div className="text-center pt-2 border-t border-gray-100 text-[11px] text-[#457B9D]">
+            <span className="font-semibold text-[#1D3557]">🔒 Super Admin credentials are provisioned via environment configuration.</span>
+          </div>
+        )}
 
       </div>
     </div>

@@ -12,6 +12,7 @@ import Footer from './components/Footer/Footer';
 import CustomerLayout from './components/CustomerLayout/CustomerLayout';
 import VendorLayout from './components/VendorLayout/VendorLayout';
 import SuperAdminLayout from './components/AdminLayout/SuperAdminLayout';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 
 // Public & Booking Pages
 import Home from './pages/Home/Home';
@@ -20,6 +21,7 @@ import ProductDetails from './pages/ProductDetails/ProductDetails';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import ForgotPassword from './pages/Auth/ForgotPassword';
+import Unauthorized from './pages/Auth/Unauthorized';
 import Booking from './pages/Booking/Booking';
 import Checkout from './pages/Booking/Checkout';
 import BookingSuccess from './pages/Booking/BookingSuccess';
@@ -112,70 +114,77 @@ export default function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/unauthorized" element={<Unauthorized />} />
                 <Route path="/booking" element={<Booking />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/booking/success" element={<BookingSuccess />} />
               </Route>
 
-              {/* 2. Customer SaaS Portal Routes */}
-              <Route path="/customer" element={<CustomerLayout />}>
-                <Route index element={<Navigate to="/customer/dashboard" replace />} />
-                <Route path="dashboard" element={<DashboardOverview />} />
-                <Route path="rentals" element={<MyRentals />} />
-                <Route path="bookings" element={<MyBookings />} />
-                <Route path="quotations" element={<Quotations />} />
-                <Route path="contracts" element={<Contracts />} />
-                <Route path="invoices" element={<Invoices />} />
-                <Route path="payments" element={<Payments />} />
-                <Route path="pickup-returns" element={<PickupReturns />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="settings" element={<Settings />} />
+              {/* 2. Customer SaaS Portal Routes (Protected: CUSTOMER) */}
+              <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
+                <Route path="/customer" element={<CustomerLayout />}>
+                  <Route index element={<Navigate to="/customer/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardOverview />} />
+                  <Route path="rentals" element={<MyRentals />} />
+                  <Route path="bookings" element={<MyBookings />} />
+                  <Route path="quotations" element={<Quotations />} />
+                  <Route path="contracts" element={<Contracts />} />
+                  <Route path="invoices" element={<Invoices />} />
+                  <Route path="payments" element={<Payments />} />
+                  <Route path="pickup-returns" element={<PickupReturns />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
               </Route>
 
-              {/* 3. Vendor SaaS Portal Routes */}
-              <Route path="/vendor" element={<VendorLayout />}>
-                <Route index element={<Navigate to="/vendor/dashboard" replace />} />
-                <Route path="dashboard" element={<VendorOverview />} />
-                <Route path="products" element={<VendorProducts />} />
-                <Route path="products/add" element={<AddEditProduct />} />
-                <Route path="products/:id/edit" element={<AddEditProduct />} />
-                <Route path="inventory" element={<VendorInventory />} />
-                <Route path="pricing" element={<VendorPricing />} />
-                <Route path="orders" element={<VendorOrders />} />
-                <Route path="orders/:id" element={<VendorOrders />} />
-                <Route path="quotations" element={<VendorQuotations />} />
-                <Route path="quotations/create" element={<VendorQuotations />} />
-                <Route path="pickups-returns" element={<VendorPickupReturns />} />
-                <Route path="customers" element={<VendorCustomers />} />
-                <Route path="customers/:id" element={<VendorCustomers />} />
-                <Route path="invoices" element={<VendorInvoices />} />
-                <Route path="payments" element={<VendorPayments />} />
-                <Route path="reports" element={<VendorReports />} />
-                <Route path="notifications" element={<VendorNotifications />} />
-                <Route path="settings" element={<VendorSettings />} />
+              {/* 3. Vendor SaaS Portal Routes (Protected: VENDOR) */}
+              <Route element={<ProtectedRoute allowedRoles={['VENDOR']} />}>
+                <Route path="/vendor" element={<VendorLayout />}>
+                  <Route index element={<Navigate to="/vendor/dashboard" replace />} />
+                  <Route path="dashboard" element={<VendorOverview />} />
+                  <Route path="products" element={<VendorProducts />} />
+                  <Route path="products/add" element={<AddEditProduct />} />
+                  <Route path="products/:id/edit" element={<AddEditProduct />} />
+                  <Route path="inventory" element={<VendorInventory />} />
+                  <Route path="pricing" element={<VendorPricing />} />
+                  <Route path="orders" element={<VendorOrders />} />
+                  <Route path="orders/:id" element={<VendorOrders />} />
+                  <Route path="quotations" element={<VendorQuotations />} />
+                  <Route path="quotations/create" element={<VendorQuotations />} />
+                  <Route path="pickups-returns" element={<VendorPickupReturns />} />
+                  <Route path="customers" element={<VendorCustomers />} />
+                  <Route path="customers/:id" element={<VendorCustomers />} />
+                  <Route path="invoices" element={<VendorInvoices />} />
+                  <Route path="payments" element={<VendorPayments />} />
+                  <Route path="reports" element={<VendorReports />} />
+                  <Route path="notifications" element={<VendorNotifications />} />
+                  <Route path="settings" element={<VendorSettings />} />
+                </Route>
               </Route>
 
-              {/* 4. Super Admin SaaS Portal Routes */}
-              <Route path="/admin" element={<SuperAdminLayout />}>
-                <Route index element={<Navigate to="/admin/dashboard" replace />} />
-                <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="customers" element={<CustomerList />} />
-                <Route path="customers/:id" element={<CustomerDetails />} />
-                <Route path="vendors" element={<VendorList />} />
-                <Route path="vendors/:id" element={<VendorDetails />} />
-                <Route path="products" element={<ProductList />} />
-                <Route path="categories" element={<CategoryManager />} />
-                <Route path="orders" element={<OrderList />} />
-                <Route path="orders/:id" element={<OrderDetails />} />
-                <Route path="payments" element={<PaymentManager />} />
-                <Route path="pickups-returns" element={<PickupsReturnsManager />} />
-                <Route path="complaints" element={<ComplaintsManager />} />
-                <Route path="reports" element={<ReportsAnalytics />} />
-                <Route path="notifications" element={<NotificationManager />} />
-                <Route path="admin-users" element={<AdminUsersManager />} />
-                <Route path="settings" element={<PlatformSettings />} />
-                <Route path="activity-logs" element={<ActivityLogs />} />
+              {/* 4. Super Admin SaaS Portal Routes (Protected: SUPER_ADMIN) */}
+              <Route element={<ProtectedRoute allowedRoles={['SUPER_ADMIN']} />}>
+                <Route path="/admin" element={<SuperAdminLayout />}>
+                  <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="dashboard" element={<AdminDashboard />} />
+                  <Route path="customers" element={<CustomerList />} />
+                  <Route path="customers/:id" element={<CustomerDetails />} />
+                  <Route path="vendors" element={<VendorList />} />
+                  <Route path="vendors/:id" element={<VendorDetails />} />
+                  <Route path="products" element={<ProductList />} />
+                  <Route path="categories" element={<CategoryManager />} />
+                  <Route path="orders" element={<OrderList />} />
+                  <Route path="orders/:id" element={<OrderDetails />} />
+                  <Route path="payments" element={<PaymentManager />} />
+                  <Route path="pickups-returns" element={<PickupsReturnsManager />} />
+                  <Route path="complaints" element={<ComplaintsManager />} />
+                  <Route path="reports" element={<ReportsAnalytics />} />
+                  <Route path="notifications" element={<NotificationManager />} />
+                  <Route path="admin-users" element={<AdminUsersManager />} />
+                  <Route path="settings" element={<PlatformSettings />} />
+                  <Route path="activity-logs" element={<ActivityLogs />} />
+                </Route>
               </Route>
 
               {/* Fallback route */}
