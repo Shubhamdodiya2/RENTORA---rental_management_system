@@ -258,21 +258,24 @@ async function runPhase4Tests() {
     // Duration = 3 days
     // Item 1 (Sony FX3 x2): 2200 * 2 * 3 = 13,200 (deposit 15000 * 2 = 30,000)
     // Item 2 (Lens x1): 1000 * 1 * 3 = 3,000 (deposit 8000 * 1 = 8,000)
-    // Item Subtotal = 16,200
+    // Pure Rental Amount (itemSubtotal - discount) = 16,200
     // Delivery Fee = 250
-    // Insurance (2% on 16200) = 324
-    // Taxable Rental Amount = 16200 + 250 + 324 = 16,774
-    // Escrow Deposit = 38,000
+    // Insurance (2% on pure rental 16200) = 324
+    // Taxable Subtotal = 16,200 + 250 + 324 = 16,774
     // GST (18% on 16,774) = 3,019.32
-    // Total Customer Payable = 16,774 + 3,019.32 + 38,000 = 57,793.32
+    // Escrow Deposit = 38,000 (0% GST, strictly separate)
+    // Additive Total Customer Payable:
+    // Pure Rental (16,200) + Delivery (250) + Insurance (324) + GST (3,019.32) + Deposit (38,000) = 57,793.32
+    const additiveSum = Number(booking1.rentalAmount) + Number(booking1.deliveryFee) + Number(booking1.insuranceAmount) + Number(booking1.taxAmount) + Number(booking1.depositAmount);
     assert(
-      Number(booking1.rentalAmount) === 16774 &&
+      Number(booking1.rentalAmount) === 16200 &&
       Number(booking1.depositAmount) === 38000 &&
       Number(booking1.taxAmount) === 3019.32 &&
       Number(booking1.deliveryFee) === 250 &&
       Number(booking1.insuranceAmount) === 324 &&
-      Number(booking1.totalAmount) === 57793.32,
-      '4. PricingEngine exact financial calculation verified (Rental: 16774, Deposit: 38000, Tax: 3019.32, Delivery: 250, Ins: 324, Total: 57793.32)'
+      Number(booking1.totalAmount) === 57793.32 &&
+      Math.abs(additiveSum - Number(booking1.totalAmount)) < 0.01,
+      '4. PricingEngine exact financial calculation verified: Pure Rental (16200) + Delivery (250) + Ins (324) + Tax (3019.32) + Deposit (38000) = Total (57793.32) with zero double-counting'
     );
 
     assert(

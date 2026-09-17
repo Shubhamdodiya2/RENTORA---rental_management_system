@@ -133,7 +133,7 @@ class BookingService {
         returnTime: '06:00 PM',
         deliveryType,
         deliveryAddress: deliveryType === 'doorstep' ? deliveryAddress : null,
-        rentalAmount: pricing.taxableRentalAmount,
+        rentalAmount: pricing.pureRentalAmount,
         depositAmount: pricing.escrowDepositAmount,
         deliveryFee: pricing.deliveryFee,
         insuranceAmount: pricing.insuranceAmount,

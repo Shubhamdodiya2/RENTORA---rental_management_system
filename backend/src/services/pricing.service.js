@@ -88,33 +88,38 @@ class PricingService {
 
     const safeDiscount = Math.min(itemSubtotal, Math.max(0, Number(discountAmount) || 0));
 
+    // Pure rental amount (item subtotal minus promotional discount)
+    const pureRentalAmount = Number((itemSubtotal - safeDiscount).toFixed(2));
+
     let insuranceAmount = Number(customInsuranceAmount) || 0;
     if (insuranceRate > 0 && !customInsuranceAmount) {
-      insuranceAmount = Math.round(((itemSubtotal - safeDiscount) * insuranceRate) * 100) / 100;
+      insuranceAmount = Math.round((pureRentalAmount * insuranceRate) * 100) / 100;
     }
 
-    // Taxable rental amount
-    const taxableRentalAmount = itemSubtotal - safeDiscount + deliveryFee + insuranceAmount;
+    // Taxable rental amount (Pure Rental + Delivery Fee + Insurance Fee)
+    const taxableRentalAmount = Number((pureRentalAmount + deliveryFee + insuranceAmount).toFixed(2));
 
-    // GST Tax on rental service
+    // GST Tax on rental service (18% on taxable subtotal)
     const taxAmount = Math.round((taxableRentalAmount * (gstRate / 100)) * 100) / 100;
 
     // Rental payment (taxable rental + GST)
-    const rentalPaymentAmount = taxableRentalAmount + taxAmount;
+    const rentalPaymentAmount = Number((taxableRentalAmount + taxAmount).toFixed(2));
 
     // Security deposit (held separately in Escrow, 0% tax, 0% commission)
     const escrowDepositAmount = totalDeposit;
 
-    // Total payable by customer at checkout
-    const totalCustomerPayable = rentalPaymentAmount + escrowDepositAmount;
+    // Total payable by customer at checkout:
+    // Exactly: pureRentalAmount + deliveryFee + insuranceAmount + taxAmount + escrowDepositAmount
+    const totalCustomerPayable = Number((pureRentalAmount + deliveryFee + insuranceAmount + taxAmount + escrowDepositAmount).toFixed(2));
 
-    // Platform commission and vendor earnings
-    const platformCommissionAmount = Math.round(((itemSubtotal - safeDiscount) * (commissionRate / 100)) * 100) / 100;
-    const vendorGrossEarnings = (itemSubtotal - safeDiscount) - platformCommissionAmount;
+    // Platform commission and vendor earnings (calculated on pure rental amount)
+    const platformCommissionAmount = Math.round((pureRentalAmount * (commissionRate / 100)) * 100) / 100;
+    const vendorGrossEarnings = Number((pureRentalAmount - platformCommissionAmount).toFixed(2));
 
     return {
       items: computedItems,
       itemSubtotal,
+      pureRentalAmount,
       discountAmount: safeDiscount,
       deliveryFee,
       insuranceAmount,
