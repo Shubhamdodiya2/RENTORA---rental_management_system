@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Receipt,
   Search,
@@ -16,11 +16,42 @@ import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import './VendorInvoices.css';
 
 export default function VendorInvoices() {
-  const { invoices, showToast } = useVendor();
+  const { invoices: contextInvoices, showToast } = useVendor();
+  const [invoices, setInvoices] = useState(contextInvoices || VENDOR_INVOICES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDoc, setSelectedDoc] = useState(null);
 
-  const totalInvoiced = invoices.reduce((acc, curr) => acc + curr.amount, 0);
+  useEffect(() => {
+    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    if (token) {
+      fetch('/api/v1/invoices/vendor', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => res.json())
+        .then((resData) => {
+          if (resData.success && Array.isArray(resData.data) && resData.data.length > 0) {
+            const mapped = resData.data.map((inv) => ({
+              id: inv.id,
+              invoiceNumber: inv.invoiceNumber,
+              orderId: inv.booking ? inv.booking.bookingNumber : (inv.order ? inv.order.orderNumber : 'N/A'),
+              customer: inv.customerSnapshot?.fullName || inv.customer?.fullName || 'Customer',
+              issueDate: inv.invoiceDate,
+              paymentMethod: inv.paymentMethod || 'UPI',
+              amount: Number(inv.totalAmount || 0),
+              deposit: Number(inv.depositAmount || 0),
+              paymentStatus: inv.status === 'PAID' ? 'Paid' : 'Pending',
+              rawInvoice: inv
+            }));
+            setInvoices(mapped);
+          }
+        })
+        .catch(() => {
+          // Keep mock invoices
+        });
+    }
+  }, []);
+
+  const totalInvoiced = invoices.reduce((acc, curr) => acc + Number(curr.amount || 0), 0);
 
   const filteredInvoices = invoices.filter((inv) => {
     if (!searchQuery.trim()) return true;
@@ -138,7 +169,7 @@ export default function VendorInvoices() {
                   <td>
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.orderId })}
+                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv })}
                         className="btn-v-action-view"
                         title="View Official Invoice"
                       >
@@ -146,7 +177,13 @@ export default function VendorInvoices() {
                         <span>View</span>
                       </button>
                       <button
-                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.orderId })}
+                        onClick={() => {
+                          if (inv.rawInvoice && inv.rawInvoice.id) {
+                            window.open(`/api/v1/invoices/${inv.rawInvoice.id}/html`, '_blank');
+                          } else {
+                            setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv });
+                          }
+                        }}
                         className="btn-v-action-view"
                         title="Download Invoice PDF"
                       >
@@ -166,6 +203,7 @@ export default function VendorInvoices() {
         <DocumentModal
           type={selectedDoc.type}
           docId={selectedDoc.id}
+          data={selectedDoc.data}
           onClose={() => setSelectedDoc(null)}
         />
       )}

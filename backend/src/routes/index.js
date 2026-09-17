@@ -15,6 +15,8 @@ const adminBookingRoutes = require('./adminBooking.routes');
 const quotationRoutes = require('./quotation.routes');
 const paymentRoutes = require('./payment.routes');
 const adminPaymentRoutes = require('./adminPayment.routes');
+const invoiceRoutes = require('./invoice.routes');
+const adminInvoiceRoutes = require('./adminInvoice.routes');
 
 // Mount Sub-routers
 router.use('/auth', authRoutes);
@@ -28,6 +30,8 @@ router.use('/admin/bookings', adminBookingRoutes);
 router.use('/quotations', quotationRoutes);
 router.use('/payments', paymentRoutes);
 router.use('/admin/payments', adminPaymentRoutes);
+router.use('/invoices', invoiceRoutes);
+router.use('/admin/invoices', adminInvoiceRoutes);
 
 // System Health Check Endpoint
 router.get('/health', async (req, res) => {

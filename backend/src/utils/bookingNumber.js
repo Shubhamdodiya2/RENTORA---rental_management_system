@@ -25,7 +25,12 @@ function generateQuotationNumber() {
   return `QTN-${year}${month}${day}-${randomSuffix}`;
 }
 
+function generateInvoiceNumber(seq = 1, year = new Date().getFullYear()) {
+  return `INV-${year}-${String(seq).padStart(6, '0')}`;
+}
+
 module.exports = {
   generateBookingNumber,
-  generateQuotationNumber
+  generateQuotationNumber,
+  generateInvoiceNumber
 };

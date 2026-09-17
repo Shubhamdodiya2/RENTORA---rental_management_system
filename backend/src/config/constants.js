@@ -60,5 +60,15 @@ module.exports = {
   DELIVERY_TYPES: ['doorstep', 'store_pickup'],
   PAYMENT_PLANS: ['full', 'deposit_only', 'pay_on_delivery'],
   PAYMENT_SUBMISSION_STATUSES: ['Pending', 'Under_Review', 'Verified', 'Rejected'],
-  PAYMENT_METHODS: ['UPI_MANUAL', 'BANK_TRANSFER', 'RAZORPAY']
+  PAYMENT_METHODS: ['UPI_MANUAL', 'BANK_TRANSFER', 'RAZORPAY'],
+  INVOICE_STATUSES: [
+    'DRAFT',
+    'ISSUED',
+    'PAYMENT_PENDING',
+    'PAID',
+    'PARTIALLY_PAID',
+    'CANCELLED',
+    'REFUNDED',
+    'REVISED'
+  ]
 };

@@ -20,6 +20,7 @@ const {
   User,
   VendorProfile
 } = require('../models');
+const InvoiceService = require('./invoice.service');
 const { ROLES } = require('../config/constants');
 
 class PaymentService {
@@ -364,6 +365,15 @@ class PaymentService {
         }, { transaction: t });
       }
 
+      // 8.5 Synchronize Invoice to PAID & Verified status
+      await InvoiceService.syncInvoicePaymentStatus(
+        booking.id,
+        'Success',
+        submission.utrNumber,
+        adminUser,
+        { transaction: t }
+      );
+
       await t.commit();
 
       return {
@@ -454,6 +464,17 @@ class PaymentService {
         type: 'PAYMENT',
         metadata: { submissionId: submission.id, bookingId: submission.bookingId, rejectionReason: reason }
       }, { transaction: t });
+
+      // 5. Synchronize Invoice status to Failed
+      if (submission.bookingId) {
+        await InvoiceService.syncInvoicePaymentStatus(
+          submission.bookingId,
+          'Failed',
+          submission.utrNumber,
+          adminUser,
+          { transaction: t }
+        );
+      }
 
       await t.commit();
       return submission;

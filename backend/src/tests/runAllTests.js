@@ -13,11 +13,12 @@ const suites = [
   { name: 'Phase 3: Catalog, Products & Inventory Availability', file: 'phase3CatalogInventory.test.js' },
   { name: 'Phase 4: 8-Step Booking Lifecycle & Quotation Engine', file: 'phase4BookingLifecycle.test.js' },
   { name: 'Phase 5: Manual UPI Payment & Verification Engine', file: 'phase5ManualUpiPayment.test.js' },
-  { name: 'Phase 6: Complete Auth, RBAC & Ownership Security', file: 'phase6AuthRbac.test.js' }
+  { name: 'Phase 6: Complete Auth, RBAC & Ownership Security', file: 'phase6AuthRbac.test.js' },
+  { name: 'Phase 7: Professional Invoice & Billing System', file: 'phase7Invoice.test.js' }
 ];
 
 console.log('========================================================================');
-console.log('🚀 RENTORA MASTER TEST RUNNER (PHASES 1 - 6)');
+console.log('🚀 RENTORA MASTER TEST RUNNER (PHASES 1 - 7)');
 console.log('========================================================================\n');
 
 let allPassed = true;
@@ -49,7 +50,7 @@ for (const item of summary) {
 console.log('========================================================================');
 
 if (allPassed) {
-  console.log('🎉 ALL 238/238 TEST ASSERTIONS PASSED ACROSS PHASES 1–6 (100%)');
+  console.log('🎉 ALL TEST SUITES PASSED ACROSS PHASES 1–7 (100% REGRESSION PASS)');
   console.log('========================================================================\n');
   process.exit(0);
 } else {

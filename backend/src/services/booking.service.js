@@ -17,6 +17,7 @@ const {
 } = require('../models');
 const PricingService = require('./pricing.service');
 const AvailabilityService = require('./availability.service');
+const InvoiceService = require('./invoice.service');
 const { generateBookingNumber } = require('../utils/bookingNumber');
 const { generateSecureHandoverOtp, verifySecureHandoverOtp } = require('../utils/otpGenerator');
 const { LIFECYCLE_STEPS, BOOKING_STATUSES } = require('../config/constants');
@@ -199,6 +200,9 @@ class BookingService {
           performedBy: customerId
         }, { transaction: t });
       }
+
+      // 9.5 Generate Official Tax Invoice (status: ISSUED, paymentStatus: Pending)
+      await InvoiceService.generateInvoiceForBooking(booking.id, { transaction: t });
 
       if (!options.transaction) {
         await t.commit();

@@ -137,8 +137,14 @@ Commission.belongsTo(VendorProfile, { foreignKey: 'vendorId', as: 'vendor' });
 
 Order.hasOne(Invoice, { foreignKey: 'orderId', as: 'invoice', onDelete: 'CASCADE' });
 Invoice.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });
+Booking.hasOne(Invoice, { foreignKey: 'bookingId', as: 'invoice', onDelete: 'CASCADE' });
+Invoice.belongsTo(Booking, { foreignKey: 'bookingId', as: 'booking' });
+Invoice.belongsTo(Quotation, { foreignKey: 'quotationId', as: 'quotation' });
 Invoice.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
 Invoice.belongsTo(VendorProfile, { foreignKey: 'vendorId', as: 'vendor' });
+Invoice.belongsTo(User, { foreignKey: 'verifiedByAdminId', as: 'verifier' });
+User.hasMany(Invoice, { foreignKey: 'customerId', as: 'customerInvoices' });
+VendorProfile.hasMany(Invoice, { foreignKey: 'vendorId', as: 'vendorInvoices' });
 
 Order.hasMany(PaymentSubmission, { foreignKey: 'orderId', as: 'paymentSubmissions', onDelete: 'CASCADE' });
 PaymentSubmission.belongsTo(Order, { foreignKey: 'orderId', as: 'order' });

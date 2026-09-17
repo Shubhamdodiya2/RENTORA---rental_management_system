@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Receipt,
   Search,
@@ -16,21 +16,56 @@ import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import './Invoices.css';
 
 export default function Invoices() {
+  const [invoices, setInvoices] = useState(CUSTOMER_INVOICES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const filteredInvoices = CUSTOMER_INVOICES.filter((inv) => {
+  useEffect(() => {
+    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    if (token) {
+      setLoading(true);
+      fetch('/api/v1/invoices/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => res.json())
+        .then((resData) => {
+          if (resData.success && Array.isArray(resData.data) && resData.data.length > 0) {
+            const mapped = resData.data.map((inv) => ({
+              id: inv.id,
+              invoiceNumber: inv.invoiceNumber,
+              orderId: inv.booking ? inv.booking.bookingNumber : inv.orderId,
+              product: inv.itemsSnapshot && inv.itemsSnapshot[0] ? inv.itemsSnapshot[0].productName : 'Rental Item',
+              vendor: inv.vendorSnapshot ? inv.vendorSnapshot.storeName : (inv.vendor ? inv.vendor.businessName : 'Vendor'),
+              invoiceDate: inv.invoiceDate,
+              paymentMethod: inv.paymentMethod || 'UPI',
+              total: Number(inv.totalAmount || 0),
+              deposit: Number(inv.depositAmount || 0),
+              status: inv.status === 'PAID' ? 'Confirmed' : 'Pending Verification',
+              rawInvoice: inv
+            }));
+            setInvoices(mapped);
+          }
+        })
+        .catch(() => {
+          // Keep mock invoices
+        })
+        .finally(() => setLoading(false));
+    }
+  }, []);
+
+  const filteredInvoices = invoices.filter((inv) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
       inv.invoiceNumber.toLowerCase().includes(q) ||
-      inv.orderId.toLowerCase().includes(q) ||
-      inv.product.toLowerCase().includes(q) ||
-      inv.vendor.toLowerCase().includes(q)
+      (inv.orderId && inv.orderId.toLowerCase().includes(q)) ||
+      (inv.product && inv.product.toLowerCase().includes(q)) ||
+      (inv.vendor && inv.vendor.toLowerCase().includes(q))
     );
   });
 
-  const totalInvoiced = CUSTOMER_INVOICES.reduce((acc, curr) => acc + curr.total, 0);
+  const totalInvoiced = invoices.reduce((acc, curr) => acc + Number(curr.total || 0), 0);
 
   return (
     <div className="invoices-page">
@@ -124,7 +159,7 @@ export default function Invoices() {
                   <td>
                     <div className="flex items-center gap-1.5">
                       <button
-                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.orderId })}
+                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv })}
                         className="btn-inv-action"
                         title="View Official Tax Invoice"
                       >
@@ -132,9 +167,15 @@ export default function Invoices() {
                         <span>View</span>
                       </button>
                       <button
-                        onClick={() => setSelectedDoc({ type: 'invoice', id: inv.orderId })}
+                        onClick={() => {
+                          if (inv.rawInvoice && inv.rawInvoice.id) {
+                            window.open(`/api/v1/invoices/${inv.rawInvoice.id}/html`, '_blank');
+                          } else {
+                            setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv });
+                          }
+                        }}
                         className="btn-inv-download"
-                        title="Download Tax PDF"
+                        title="Download / Print Tax Invoice"
                       >
                         <Download size={14} />
                       </button>
@@ -152,6 +193,7 @@ export default function Invoices() {
         <DocumentModal
           type={selectedDoc.type}
           docId={selectedDoc.id}
+          data={selectedDoc.data}
           onClose={() => setSelectedDoc(null)}
         />
       )}
