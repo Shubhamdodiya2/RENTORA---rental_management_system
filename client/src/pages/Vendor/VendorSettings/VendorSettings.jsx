@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Store,
   Building,
@@ -14,36 +14,71 @@ import {
   Clock,
   LogOut,
   MapPin,
-  FileText
+  FileText,
+  QrCode,
+  Wallet,
+  Upload,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useVendor } from '../../../context/VendorContext';
+import { useAuth } from '../../../context/AuthContext';
 import './VendorSettings.css';
 
 const TABS = [
   { id: 'profile', label: 'Store Profile & KYC', icon: Store },
+  { id: 'payout', label: 'UPI & Payment QR', icon: QrCode },
   { id: 'business', label: 'Operations & Policies', icon: Building },
   { id: 'security', label: 'Security & Credentials', icon: Lock },
   { id: 'notifications', label: 'Notification Channels', icon: Bell }
 ];
 
 export default function VendorSettings() {
-  const { vendorProfile, setVendorProfile, showToast } = useVendor();
+  const { vendorProfile, updateVendorSettings, uploadProductImageFile, showToast } = useVendor();
+  const { changePassword } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
+  const qrFileInputRef = useRef(null);
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [isUploadingQr, setIsUploadingQr] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
-    businessName: vendorProfile.businessName,
-    vendorName: vendorProfile.vendorName,
-    email: vendorProfile.email,
-    phone: vendorProfile.phone,
-    address: vendorProfile.address,
-    city: vendorProfile.city,
-    gstNumber: vendorProfile.gstNumber,
-    website: vendorProfile.website,
-    workingHours: vendorProfile.workingHours,
-    description: vendorProfile.description,
-    bankAccount: vendorProfile.bankAccount
+    businessName: vendorProfile.businessName || '',
+    vendorName: vendorProfile.vendorName || '',
+    email: vendorProfile.email || '',
+    phone: vendorProfile.phone || '',
+    address: vendorProfile.address || '',
+    city: vendorProfile.city || '',
+    gstNumber: vendorProfile.gstNumber || '',
+    website: vendorProfile.website || '',
+    workingHours: vendorProfile.workingHours || '09:00 AM - 08:00 PM',
+    description: vendorProfile.description || '',
+    bankAccount: vendorProfile.bankAccount || 'HDFC Bank (Escrow Linked)',
+    upiId: vendorProfile.upiId || (vendorProfile.businessName ? `${vendorProfile.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis` : 'vendor@okaxis'),
+    qrCodeUrl: vendorProfile.qrCodeUrl || ''
   });
+
+  useEffect(() => {
+    if (vendorProfile) {
+      setFormData((prev) => ({
+        ...prev,
+        businessName: vendorProfile.businessName || prev.businessName,
+        vendorName: vendorProfile.vendorName || prev.vendorName,
+        email: vendorProfile.email || prev.email,
+        phone: vendorProfile.phone || prev.phone,
+        address: vendorProfile.address || prev.address,
+        city: vendorProfile.city || prev.city,
+        gstNumber: vendorProfile.gstNumber || prev.gstNumber,
+        website: vendorProfile.website || prev.website,
+        workingHours: vendorProfile.workingHours || prev.workingHours,
+        description: vendorProfile.description || prev.description,
+        bankAccount: vendorProfile.bankAccount || prev.bankAccount,
+        upiId: vendorProfile.upiId || prev.upiId,
+        qrCodeUrl: vendorProfile.qrCodeUrl || prev.qrCodeUrl
+      }));
+    }
+  }, [vendorProfile]);
 
   // Toggles
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -58,16 +93,59 @@ export default function VendorSettings() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSaveProfile = (e) => {
-    e.preventDefault();
-    setVendorProfile((prev) => ({ ...prev, ...formData }));
-    showToast('Store settings & KYC profile updated successfully!', 'success');
+  const handleCopyUpi = () => {
+    if (formData.upiId) {
+      navigator.clipboard.writeText(formData.upiId);
+      setCopiedUpi(true);
+      setTimeout(() => setCopiedUpi(false), 2500);
+    }
   };
 
-  const handlePasswordUpdate = (e) => {
+  const handleQrFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingQr(true);
+    try {
+      const uploadedUrl = await uploadProductImageFile(file);
+      if (uploadedUrl) {
+        setFormData((prev) => ({ ...prev, qrCodeUrl: uploadedUrl }));
+        await updateVendorSettings({ ...formData, qrCodeUrl: uploadedUrl });
+      }
+    } catch (err) {
+      console.error('[VendorSettings] QR Upload error:', err);
+    } finally {
+      setIsUploadingQr(false);
+    }
+  };
+
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    showToast('Merchant password changed successfully!', 'success');
-    setPwdForm({ current: '', newPwd: '', confirm: '' });
+    await updateVendorSettings(formData);
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (pwdForm.newPwd !== pwdForm.confirm) {
+      showToast('New passwords do not match. Please re-enter.', 'error');
+      return;
+    }
+    if (pwdForm.newPwd.length < 8) {
+      showToast('New password must be at least 8 characters long.', 'error');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await changePassword(pwdForm.current, pwdForm.newPwd);
+      showToast('Merchant password updated successfully!', 'success');
+      setPwdForm({ current: '', newPwd: '', confirm: '' });
+    } catch (err) {
+      console.error('[VendorSettings] Password update error:', err);
+      showToast(err.message || 'Failed to update password. Please check your current password.', 'error');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
 
   return (
@@ -233,7 +311,143 @@ export default function VendorSettings() {
         </form>
       )}
 
-      {/* Tab 2: Business Operations */}
+      {/* Tab 2: UPI & Payment QR */}
+      {activeTab === 'payout' && (
+        <form onSubmit={handleSaveProfile} className="v-settings-section">
+          <div className="v-card-box">
+            <h3 className="v-card-title mb-2">Merchant UPI ID & Payment QR Configuration</h3>
+            <p className="text-xs text-slate-500 mb-5">
+              Configure the official UPI Virtual Payment Address (VPA) and QR code where customers make instant rental payments.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+              {/* QR Preview & Upload Box */}
+              <div className="md:col-span-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-3">
+                <div className="w-44 h-44 bg-white rounded-xl border border-slate-200 p-2 flex items-center justify-center shadow-sm">
+                  {formData.qrCodeUrl ? (
+                    <img
+                      src={formData.qrCodeUrl}
+                      alt="Vendor Custom QR Code"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  ) : (
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`upi://pay?pa=${formData.upiId || 'vendor@okaxis'}&pn=${encodeURIComponent(formData.businessName || 'Vendor')}&cu=INR`)}&margin=4`}
+                      alt="Dynamic UPI QR Code"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  )}
+                </div>
+
+                <div className="text-[11px] text-slate-600 font-medium">
+                  {formData.qrCodeUrl ? 'Custom Merchant QR Active' : 'Live Auto-Generated Payment QR'}
+                </div>
+
+                <div className="flex flex-col w-full gap-2">
+                  <input
+                    type="file"
+                    ref={qrFileInputRef}
+                    onChange={handleQrFileUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => qrFileInputRef.current?.click()}
+                    disabled={isUploadingQr}
+                    className="w-full py-2 px-3 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl text-xs font-bold text-[#1D3557] flex items-center justify-center gap-1.5 transition"
+                  >
+                    <Upload size={14} />
+                    <span>{isUploadingQr ? 'Uploading QR...' : 'Upload QR Image (PC)'}</span>
+                  </button>
+                  {formData.qrCodeUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, qrCodeUrl: '' }))}
+                      className="text-[10px] text-rose-600 hover:underline font-bold"
+                    >
+                      Reset to Auto-Generated QR
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* UPI Form Fields */}
+              <div className="md:col-span-8 space-y-4">
+                <div className="v-form-field">
+                  <label className="v-form-lbl">Official Store UPI VPA (ID) *</label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 relative">
+                      <input
+                        type="text"
+                        name="upiId"
+                        value={formData.upiId}
+                        onChange={handleChange}
+                        placeholder="e.g. omshop@okaxis or yourname@upi"
+                        className="v-form-input font-mono font-bold text-navy pr-10"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyUpi}
+                      className="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-[#1D3557] rounded-xl text-xs font-bold flex items-center gap-1 transition"
+                    >
+                      {copiedUpi ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                      <span>{copiedUpi ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mt-1">
+                    Customers will scan and transfer rental payouts & escrow deposits directly to this UPI address.
+                  </p>
+                </div>
+
+                <div className="v-form-field">
+                  <label className="v-form-lbl">Custom QR Code Image URL (Optional)</label>
+                  <input
+                    type="text"
+                    name="qrCodeUrl"
+                    value={formData.qrCodeUrl}
+                    onChange={handleChange}
+                    placeholder="https://... or uploaded image path"
+                    className="v-form-input font-mono text-xs"
+                  />
+                </div>
+
+                <div className="v-form-field">
+                  <label className="v-form-lbl">Linked Settlement Bank Account</label>
+                  <input
+                    type="text"
+                    name="bankAccount"
+                    value={formData.bankAccount}
+                    onChange={handleChange}
+                    className="v-form-input font-medium"
+                  />
+                </div>
+
+                <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <CheckCircle2 size={15} className="text-emerald-600" />
+                    <span>Real-Time Payment Routing Enabled</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-emerald-700">
+                    This UPI ID & QR Code will be embedded into customer checkouts for all your product listings, order summary bills, and GST tax invoices.
+                  </p>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button type="submit" className="btn-v-primary">
+                    <Save size={16} />
+                    <span>Save UPI & QR Settings</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {/* Tab 3: Business Operations */}
       {activeTab === 'business' && (
         <div className="v-settings-section">
           <div className="v-card-box">
@@ -316,8 +530,12 @@ export default function VendorSettings() {
                 />
               </div>
 
-              <button type="submit" className="btn-v-primary mt-2">
-                Update Merchant Password
+              <button
+                type="submit"
+                disabled={isUpdatingPassword}
+                className="btn-v-primary mt-2"
+              >
+                {isUpdatingPassword ? 'Updating Password...' : 'Update Merchant Password'}
               </button>
             </form>
           </div>

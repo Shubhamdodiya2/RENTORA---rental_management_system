@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bell,
   CheckCircle2,
@@ -10,49 +10,111 @@ import {
   ShieldCheck,
   AlertCircle,
   Truck,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
-import { CUSTOMER_NOTIFICATIONS } from '../../../data/customerMockData';
+import api from '../../../services/api';
 import './Notifications.css';
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(CUSTOMER_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
   const [activeFilter, setActiveFilter] = useState('All');
+  const [loading, setLoading] = useState(true);
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/notifications');
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        const mapped = res.data.data.map((n) => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type ? n.type.toLowerCase() : 'system',
+          read: Boolean(n.isRead),
+          time: n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Just now',
+          orderId: n.metadata?.bookingNumber || n.metadata?.orderId || null,
+          actionUrl: n.actionUrl
+        }));
+        setNotifications(mapped);
+      } else {
+        setNotifications([]);
+      }
+    } catch (err) {
+      console.warn('[Notifications] Fetch notice:', err.message);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleClearAll = () => {
-    setNotifications([]);
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.post('/notifications/mark-all-read');
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('[Notifications] Mark all read error:', err);
+    }
   };
 
-  const handleToggleRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
-    );
+  const handleClearAll = async () => {
+    if (!window.confirm('Clear all notifications?')) return;
+    try {
+      await api.delete('/notifications');
+      setNotifications([]);
+    } catch (err) {
+      console.error('[Notifications] Clear all error:', err);
+    }
   };
 
-  const handleDelete = (id) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const handleToggleRead = async (id) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target) return;
+    const newRead = !target.read;
+    try {
+      await api.patch(`/notifications/${id}/read`, { isRead: newRead });
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: newRead } : n))
+      );
+    } catch (err) {
+      console.error('[Notifications] Toggle read error:', err);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+    } catch (err) {
+      console.error('[Notifications] Delete error:', err);
+    }
   };
 
   const filteredNotifs = notifications.filter((n) => {
     if (activeFilter === 'Unread') return !n.read;
-    if (activeFilter === 'Returns') return n.type === 'return_reminder' || n.type === 'late_return';
-    if (activeFilter === 'Financials') return n.type === 'refund_processed' || n.type === 'payment_success';
+    if (activeFilter === 'Returns') return n.type === 'qc' || n.type === 'booking' || n.type === 'return_reminder';
+    if (activeFilter === 'Financials') return n.type === 'payment' || n.type === 'refund_processed';
     return true;
   });
 
   const getNotifIcon = (type) => {
     switch (type) {
       case 'return_reminder':
+      case 'qc':
         return <Clock size={20} className="text-amber-500" />;
       case 'booking_confirmed':
+      case 'booking':
+      case 'order':
         return <CalendarCheck size={20} className="text-secondary-blue" />;
       case 'quotation_received':
+      case 'approval':
         return <FileText size={20} className="text-primary-red" />;
       case 'refund_processed':
+      case 'payment':
         return <CheckCircle2 size={20} className="text-emerald-500" />;
       default:
         return <Bell size={20} className="text-navy" />;
@@ -70,16 +132,18 @@ export default function Notifications() {
           </p>
         </div>
 
-        <div className="notif-top-actions">
-          <button onClick={handleMarkAllAsRead} className="btn-notif-action">
-            <Check size={14} />
-            <span>Mark All as Read</span>
-          </button>
-          <button onClick={handleClearAll} className="btn-notif-action btn-notif-danger">
-            <Trash2 size={14} />
-            <span>Clear All</span>
-          </button>
-        </div>
+        {notifications.length > 0 && (
+          <div className="notif-top-actions">
+            <button onClick={handleMarkAllAsRead} className="btn-notif-action">
+              <Check size={14} />
+              <span>Mark All as Read</span>
+            </button>
+            <button onClick={handleClearAll} className="btn-notif-action btn-notif-danger">
+              <Trash2 size={14} />
+              <span>Clear All</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Filter Tabs */}
@@ -97,11 +161,20 @@ export default function Notifications() {
 
       {/* Notifications List */}
       <div className="notifications-list-card">
-        {filteredNotifs.length === 0 ? (
-          <div className="notifs-empty-box">
-            <Bell size={48} className="text-slate-300 mb-3" />
-            <h3>No Notifications</h3>
-            <p>You're all caught up! No active alerts in this section.</p>
+        {loading ? (
+          <div className="py-16 text-center text-slate-400 space-y-3">
+            <Loader2 size={32} className="animate-spin text-[#E63946] mx-auto" />
+            <p className="text-xs font-semibold">Loading real-time notifications...</p>
+          </div>
+        ) : filteredNotifs.length === 0 ? (
+          <div className="notifs-empty-box py-16 px-6 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-red-50 text-[#E63946] flex items-center justify-center mx-auto mb-3 shadow-sm">
+              <Bell size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-navy font-['Sora']">No Notifications</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+              You're all caught up! Real-time alerts for booking confirmations, return reminders, and escrow payouts will appear here.
+            </p>
           </div>
         ) : (
           filteredNotifs.map((notif) => (

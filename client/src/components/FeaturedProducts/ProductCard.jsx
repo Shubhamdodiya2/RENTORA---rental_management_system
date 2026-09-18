@@ -10,12 +10,14 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
+import { useWishlist } from '../../context/WishlistContext';
 import './FeaturedProducts.css';
 
 export default function ProductCard({ product }) {
   const navigate = useNavigate();
   const { updateBookingDraft } = useBooking();
-  const [isFavorite, setIsFavorite] = useState(false);
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const isFavorite = isInWishlist(product.id);
   const [priceMode, setPriceMode] = useState('day');
 
   const currentPrice = priceMode === 'day' 
@@ -48,10 +50,14 @@ export default function ProductCard({ product }) {
       {/* Product Image */}
       <div className="product-img-box">
         <img
-          src={product.images[0]}
+          src={product.images?.[0] || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80'}
           alt={product.title}
           className="product-img"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+          }}
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
@@ -65,7 +71,7 @@ export default function ProductCard({ product }) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setIsFavorite(!isFavorite);
+              toggleWishlist(product);
             }}
             aria-label="Save to Wishlist"
             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${

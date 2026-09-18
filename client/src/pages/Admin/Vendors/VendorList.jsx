@@ -46,16 +46,19 @@ export default function VendorList() {
   // Filtered Vendors
   const filteredVendors = useMemo(() => {
     return vendors.filter((v) => {
+      const q = searchQuery.toLowerCase();
       const matchesSearch =
-        v.businessName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.ownerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        v.gstin.toLowerCase().includes(searchQuery.toLowerCase());
+        !searchQuery.trim() ||
+        (v.businessName && v.businessName.toLowerCase().includes(q)) ||
+        (v.ownerName && v.ownerName.toLowerCase().includes(q)) ||
+        (v.email && v.email.toLowerCase().includes(q)) ||
+        (v.city && v.city.toLowerCase().includes(q)) ||
+        (v.gstNumber && v.gstNumber.toLowerCase().includes(q)) ||
+        (v.gstin && v.gstin.toLowerCase().includes(q));
 
       const matchesVerification = verificationFilter === 'all' || v.verificationStatus === verificationFilter;
-      const matchesCategory = categoryFilter === 'all' || v.category === categoryFilter;
-      const matchesCity = cityFilter === 'all' || v.city === cityFilter;
+      const matchesCategory = categoryFilter === 'all' || !v.category || v.category === categoryFilter;
+      const matchesCity = cityFilter === 'all' || (v.city && v.city.toLowerCase() === cityFilter.toLowerCase());
 
       return matchesSearch && matchesVerification && matchesCategory && matchesCity;
     });
@@ -232,17 +235,17 @@ export default function VendorList() {
 
                     {/* Inventory & Orders */}
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900">{vendor.totalProducts} items listed</div>
-                      <span className="text-[11px] text-slate-500">{vendor.totalOrders} fulfilled</span>
+                      <div className="font-semibold text-slate-900">{vendor.totalProducts || 0} items listed</div>
+                      <span className="text-[11px] text-slate-500">{vendor.totalRentals || vendor.totalOrders || 0} fulfilled</span>
                     </td>
 
                     {/* Revenue */}
                     <td className="py-3.5 px-4">
                       <div className="font-extrabold text-slate-900 font-['Sora'] text-xs">
-                        ₹{vendor.revenue.toLocaleString('en-IN')}
+                        ₹{(Number(vendor.revenue ?? vendor.totalRevenue ?? 0)).toLocaleString('en-IN')}
                       </div>
                       <span className="text-[10px] text-emerald-700 font-semibold">
-                        Bal: ₹{vendor.payoutBalance.toLocaleString('en-IN')}
+                        Bal: ₹{(Number(vendor.payoutBalance ?? 0)).toLocaleString('en-IN')}
                       </span>
                     </td>
 

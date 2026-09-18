@@ -36,11 +36,17 @@ export default function ComplaintsManager() {
   // Filtered Tickets
   const filteredTickets = useMemo(() => {
     return complaints.filter((c) => {
+      const ticketNo = (c.ticketNumber || c.id || '').toLowerCase();
+      const raisedBy = (c.raisedBy || c.customerName || '').toLowerCase();
+      const subject = (c.subject || '').toLowerCase();
+      const relatedOrder = (c.relatedOrder || c.orderNumber || '').toLowerCase();
+      const q = searchQuery.toLowerCase();
+
       const matchesSearch =
-        c.ticketNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.raisedBy.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.relatedOrder?.toLowerCase().includes(searchQuery.toLowerCase());
+        ticketNo.includes(q) ||
+        raisedBy.includes(q) ||
+        subject.includes(q) ||
+        relatedOrder.includes(q);
 
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
       const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
@@ -231,18 +237,27 @@ export default function ComplaintsManager() {
               {/* Message History Thread */}
               <div className="flex-1 overflow-y-auto space-y-3 pr-2 max-h-[340px] my-2">
                 {selectedTicket.messages?.map((msg, idx) => {
-                  const isAdmin = msg.role === 'Super Admin' || msg.role?.includes('Admin');
+                  const sRole = typeof msg.role === 'string' ? msg.role : 'User';
+                  const sName = typeof msg.sender === 'string' ? msg.sender : (msg.sender?.fullName || 'User');
+                  const sText = typeof msg.text === 'string' ? msg.text : (typeof msg.message === 'string' ? msg.message : '');
+                  const sTime = typeof msg.time === 'string' ? msg.time : '';
+                  const isAdmin = sRole === 'Super Admin' || sRole.includes('Admin') || sName.toLowerCase().includes('admin');
+
                   return (
                     <div
                       key={idx}
                       className={`flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}
                     >
                       <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mb-1 px-1">
-                        <span className="font-semibold text-slate-700">{msg.sender}</span>
+                        <span className="font-semibold text-slate-700">{sName}</span>
                         <span>•</span>
-                        <span>{msg.role}</span>
-                        <span>•</span>
-                        <span>{msg.time}</span>
+                        <span>{sRole}</span>
+                        {sTime && (
+                          <>
+                            <span>•</span>
+                            <span>{sTime}</span>
+                          </>
+                        )}
                       </div>
                       <div
                         className={`p-3.5 rounded-2xl max-w-lg text-xs leading-relaxed ${
@@ -251,7 +266,7 @@ export default function ComplaintsManager() {
                             : 'bg-slate-100 text-slate-800 border border-slate-200/80 rounded-bl-xs'
                         }`}
                       >
-                        {msg.text}
+                        {sText}
                       </div>
                     </div>
                   );

@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Package,
   CalendarCheck,
+  Heart,
   FileCheck2,
   ShieldCheck,
   Receipt,
@@ -16,23 +17,25 @@ import {
   LogOut,
   X,
   BadgeCheck,
+  HelpCircle,
   Sparkles
 } from 'lucide-react';
 import Logo from '../Logo/Logo';
-import { CUSTOMER_PROFILE } from '../../data/customerMockData';
 import { useAuth } from '../../context/AuthContext';
 import './CustomerSidebar.css';
 
 const navItems = [
   { path: '/customer/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { path: '/customer/rentals', label: 'My Rentals', icon: Package, badge: '3' },
+  { path: '/customer/wishlist', label: 'Saved Wishlist', icon: Heart },
+  { path: '/customer/rentals', label: 'My Rentals', icon: Package },
   { path: '/customer/bookings', label: 'My Bookings', icon: CalendarCheck },
-  { path: '/customer/quotations', label: 'Quotations', icon: FileCheck2, badge: '1 New' },
+  { path: '/customer/quotations', label: 'Quotations', icon: FileCheck2 },
   { path: '/customer/contracts', label: 'Rental Contracts', icon: ShieldCheck },
   { path: '/customer/invoices', label: 'Invoices', icon: Receipt },
   { path: '/customer/payments', label: 'Payments', icon: CreditCard },
-  { path: '/customer/pickup-returns', label: 'Pickup & Returns', icon: Truck, badge: '2 Due' },
-  { path: '/customer/notifications', label: 'Notifications', icon: Bell, badge: '2' },
+  { path: '/customer/pickup-returns', label: 'Pickup & Returns', icon: Truck },
+  { path: '/customer/notifications', label: 'Notifications', icon: Bell },
+  { path: '/customer/support', label: 'Help & Support', icon: HelpCircle },
   { path: '/customer/profile', label: 'My Profile', icon: User },
   { path: '/customer/settings', label: 'Settings', icon: Settings },
 ];
@@ -72,7 +75,7 @@ export default function CustomerSidebar({ isOpen, onClose }) {
         <div className="sidebar-profile-card">
           <div className="sidebar-avatar-wrapper">
             <img 
-              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
+              src={(user?.avatar && !user.avatar.includes('photo-1534528741775-53994a69daeb')) ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || 'Customer')}&background=1D3557&color=ffffff&bold=true`} 
               alt={user?.fullName || user?.name || 'Customer'} 
               className="sidebar-avatar-img"
             />

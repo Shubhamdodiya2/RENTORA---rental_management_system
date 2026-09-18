@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sliders,
   Save,
@@ -15,10 +15,63 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../../context/AdminContext';
 
+const DEFAULT_SETTINGS = {
+  general: {
+    platformName: 'Rentora Marketplace',
+    supportEmail: 'support@rentora.in',
+    supportPhone: '+91 98765 43210',
+    platformUrl: 'https://rentora.in',
+    address: 'Block A, Titanium City Centre, Prahladnagar, Ahmedabad, Gujarat 380015'
+  },
+  commission: {
+    defaultRate: 10,
+    cameraRate: 8,
+    vehicleRate: 12,
+    autoDeductPayout: true
+  },
+  tax: {
+    defaultGSTRate: 18,
+    platformGSTIN: '24AAAPL1234C1ZV'
+  },
+  orderPolicy: {
+    minRentalDays: 1,
+    cancellationGraceHours: 24,
+    lateFeePerDayMultiplier: 1.5
+  },
+  vendorPolicy: {
+    autoApproveProducts: false,
+    requireGSTForListing: true
+  },
+  security: {
+    require2FAForAdmin: false,
+    auditLoggingEnabled: true
+  }
+};
+
 export default function PlatformSettings() {
   const { settings, updateSettings, showToast } = useAdmin();
   const [activeTab, setActiveTab] = useState('general');
-  const [localSettings, setLocalSettings] = useState(settings);
+  const [localSettings, setLocalSettings] = useState(() => ({
+    general: { ...DEFAULT_SETTINGS.general, ...(settings?.general || {}) },
+    commission: { ...DEFAULT_SETTINGS.commission, ...(settings?.commission || {}) },
+    tax: { ...DEFAULT_SETTINGS.tax, ...(settings?.tax || {}) },
+    orderPolicy: { ...DEFAULT_SETTINGS.orderPolicy, ...(settings?.orderPolicy || {}) },
+    vendorPolicy: { ...DEFAULT_SETTINGS.vendorPolicy, ...(settings?.vendorPolicy || {}) },
+    security: { ...DEFAULT_SETTINGS.security, ...(settings?.security || {}) }
+  }));
+
+  useEffect(() => {
+    if (settings) {
+      setLocalSettings({
+        general: { ...DEFAULT_SETTINGS.general, ...(settings.general || {}) },
+        commission: { ...DEFAULT_SETTINGS.commission, ...(settings.commission || {}) },
+        tax: { ...DEFAULT_SETTINGS.tax, ...(settings.tax || {}) },
+        orderPolicy: { ...DEFAULT_SETTINGS.orderPolicy, ...(settings.orderPolicy || {}) },
+        vendorPolicy: { ...DEFAULT_SETTINGS.vendorPolicy, ...(settings.vendorPolicy || {}) },
+        security: { ...DEFAULT_SETTINGS.security, ...(settings.security || {}) }
+      });
+    }
+  }, [settings]);
 
   const tabs = [
     { id: 'general', label: 'General Info', icon: Building },

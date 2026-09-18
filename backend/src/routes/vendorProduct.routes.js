@@ -12,6 +12,7 @@ const {
 } = require('../middlewares/productOwnership.middleware');
 const { 
   uploadProductImage, 
+  uploadSingleProductImage,
   verifyMagicBytes 
 } = require('../middlewares/upload.middleware');
 
@@ -19,6 +20,15 @@ const router = express.Router();
 
 // All vendor product routes require authentication & vendor role
 router.use(authenticate, isVendor);
+
+// POST /api/v1/vendor/products/upload-image - Upload single image for product creation
+router.post(
+  '/upload-image',
+  requireApprovedVendor,
+  uploadSingleProductImage,
+  verifyMagicBytes,
+  VendorProductController.uploadSingleImage
+);
 
 // POST /api/v1/vendor/products - Create product (requires approved vendor profile)
 router.post('/', requireApprovedVendor, VendorProductController.createProduct);

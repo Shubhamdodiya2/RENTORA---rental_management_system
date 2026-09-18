@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   CheckCircle2, 
@@ -11,10 +11,12 @@ import {
   Sparkles,
   Printer,
   Home,
-  Store
+  Store,
+  FileText
 } from 'lucide-react';
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
+import DocumentModal from '../../components/CustomerLayout/DocumentModal';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
 import './Booking.css';
@@ -23,6 +25,7 @@ export default function BookingSuccess() {
   const navigate = useNavigate();
   const { confirmedBooking, bookingDraft } = useBooking();
   const { user } = useAuth();
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
 
   const savedBooking = typeof window !== 'undefined' && sessionStorage.getItem('rentora_confirmed_booking')
     ? JSON.parse(sessionStorage.getItem('rentora_confirmed_booking'))
@@ -95,19 +98,19 @@ export default function BookingSuccess() {
             {/* Product Item Row */}
             <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
               <img
-                src={booking.product.images[0]}
-                alt={booking.product.title}
+                src={booking.product?.images?.[0] || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80'}
+                alt={booking.product?.title || 'Equipment Item'}
                 className="w-16 h-16 rounded-2xl object-cover border border-[#A8DADC]"
               />
               <div className="flex-1">
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1D3557] text-white">
-                  {booking.product.category}
+                  {booking.product?.category || 'Equipment'}
                 </span>
                 <h3 className="font-bold text-sm text-[#1D3557] line-clamp-1 mt-0.5 font-['Sora']">
-                  {booking.product.title}
+                  {booking.product?.title || 'Professional Gear'}
                 </h3>
                 <p className="text-xs text-[#457B9D]">
-                  Vendor: <strong>{booking.product.vendor.name}</strong> ({booking.product.vendor.city})
+                  Vendor: <strong>{booking.product?.vendor?.name || 'Verified Vendor'}</strong> ({booking.product?.vendor?.city || 'Ahmedabad'})
                 </p>
               </div>
             </div>
@@ -149,7 +152,7 @@ export default function BookingSuccess() {
 
               <div>
                 <span className="text-[10px] font-bold text-[#457B9D] uppercase">Payment Plan</span>
-                <div className="font-bold text-[#1D3557] capitalize">{booking.paymentPlan.replace('_', ' ')}</div>
+                <div className="font-bold text-[#1D3557] capitalize">{(booking.paymentPlan || 'full').replace('_', ' ')}</div>
               </div>
 
               <div>
@@ -196,11 +199,11 @@ export default function BookingSuccess() {
           {/* Action CTAs */}
           <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
-              onClick={() => window.print()}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#457B9D] text-[#1D3557] text-xs font-bold hover:bg-[#F1FAEE] flex items-center justify-center gap-2 transition-colors"
+              onClick={() => setShowReceiptModal(true)}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-xl border border-[#457B9D] text-[#1D3557] text-xs font-bold hover:bg-[#F1FAEE] flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
             >
               <Printer size={15} />
-              <span>Print Rental Receipt</span>
+              <span>Print Rental Receipt / Invoice</span>
             </button>
 
             <Link
@@ -215,6 +218,19 @@ export default function BookingSuccess() {
         </div>
 
       </div>
+
+      {/* Official Tax Invoice & Rental Receipt Document Modal */}
+      {showReceiptModal && (
+        <DocumentModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          type="receipt"
+          title="Official Rental Booking Receipt & Tax Invoice"
+          docId={booking.orderNumber}
+          data={booking}
+        />
+      )}
     </div>
   );
 }
+

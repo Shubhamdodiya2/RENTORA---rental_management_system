@@ -244,7 +244,15 @@ export default function VendorProducts() {
                         </td>
                         <td>
                           <div className="v-gear-flex">
-                            <img src={p.image} alt={p.name} className="v-gear-img" />
+                            <img
+                              src={p.image || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80'}
+                              alt={p.name}
+                              className="v-gear-img"
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+                              }}
+                            />
                             <div>
                               <h4 className="v-gear-name">{p.name}</h4>
                               <span className="v-gear-sku">{p.sku}</span>
@@ -330,7 +338,15 @@ export default function VendorProducts() {
           {filteredProducts.map((p) => (
             <div key={p.id} className="v-product-grid-card">
               <div className="v-grid-img-wrap">
-                <img src={p.image} alt={p.name} className="v-grid-img" />
+                <img
+                  src={p.image || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80'}
+                  alt={p.name}
+                  className="v-grid-img"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+                  }}
+                />
                 <span className="v-grid-cat">{p.category}</span>
                 <span
                   className={`v-status-badge v-grid-status ${

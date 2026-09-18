@@ -3,37 +3,37 @@
   "message": "Vendor store registered successfully",
   "data": {
     "user": {
-      "id": "66056b68-1754-4498-a30f-19cb5a3a8f38",
+      "id": "6796c197-2fc9-445a-9b81-3e0b8d427c95",
       "fullName": "Vipul Joshi",
-      "email": "qa.vendor.alpha.1789673414238@rentoratest.in",
+      "email": "qa.vendor.alpha.1789759162389@rentoratest.in",
       "phone": "+91 98250 11003",
       "isActive": true,
       "isVerified": false,
       "mustChangePassword": false,
-      "updatedAt": "2026-09-17T19:30:17.102Z",
-      "createdAt": "2026-09-17T19:30:17.102Z"
+      "updatedAt": "2026-09-18T19:19:24.330Z",
+      "createdAt": "2026-09-18T19:19:24.330Z"
     },
     "roles": [
       "VENDOR"
     ],
     "customerProfile": null,
     "vendorProfile": {
-      "id": "47dc9e2b-c6f6-4f3b-8a9d-7d279dc7966b",
+      "id": "d6d5f68a-2c84-4619-b7be-ec7d2a748abf",
       "state": "Gujarat",
       "workingHours": "09:00 AM - 08:00 PM",
-      "userId": "66056b68-1754-4498-a30f-19cb5a3a8f38",
+      "userId": "6796c197-2fc9-445a-9b81-3e0b8d427c95",
       "businessName": "PixelCraft Cine Gear",
       "businessCategory": "Cameras & Photography",
       "city": "Ahmedabad",
       "businessPhone": "+91 98250 11003",
-      "businessEmail": "qa.vendor.alpha.1789673414238@rentoratest.in",
-      "verificationStatus": "Pending",
+      "businessEmail": "qa.vendor.alpha.1789759162389@rentoratest.in",
+      "verificationStatus": "Approved",
       "commissionRate": 10,
-      "updatedAt": "2026-09-17T19:30:17.109Z",
-      "createdAt": "2026-09-17T19:30:17.109Z"
+      "updatedAt": "2026-09-18T19:19:24.337Z",
+      "createdAt": "2026-09-18T19:19:24.337Z"
     },
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2MDU2YjY4LTE3NTQtNDQ5OC1hMzBmLTE5Y2I1YTNhOGYzOCIsImVtYWlsIjoicWEudmVuZG9yLmFscGhhLjE3ODk2NzM0MTQyMzhAcmVudG9yYXRlc3QuaW4iLCJmdWxsTmFtZSI6IlZpcHVsIEpvc2hpIiwicm9sZXMiOlsiVkVORE9SIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTY3MzQxNywiZXhwIjoxNzg5Njc0MzE3fQ.fG4Ip13gCZCbptRoqK_HsIwTG3rsLyYUZBQMF1ieT44",
-    "refreshToken": "4059e677cd3142d6216d0e9784d193a90692e01bf264ca4f294a1b7b014afe52aea5f6bb5abb132f"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3OTZjMTk3LTJmYzktNDQ1YS05YjgxLTNlMGI4ZDQyN2M5NSIsImVtYWlsIjoicWEudmVuZG9yLmFscGhhLjE3ODk3NTkxNjIzODlAcmVudG9yYXRlc3QuaW4iLCJmdWxsTmFtZSI6IlZpcHVsIEpvc2hpIiwicm9sZXMiOlsiVkVORE9SIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTc1OTE2NCwiZXhwIjoxNzg5NzYwMDY0fQ.N_-dh7TYA_hH_bSGTr1ofpkkb9WuKP83Vep-iqbpzys",
+    "refreshToken": "1e8f593bc7134c34af81f10bb7e8ebb8253c213b1df9e4eb2232f79ca3ac987a1ad0cd35409aa4dc"
   },
   "errors": null
 }

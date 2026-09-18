@@ -4,7 +4,7 @@ export const CUSTOMER_PROFILE = {
   firstName: 'Alex',
   email: 'alex.patel@creativestudio.in',
   phone: '+91 98250 44882',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+  avatar: 'https://ui-avatars.com/api/?name=Alex+Patel&background=1D3557&color=ffffff&bold=true',
   city: 'Ahmedabad',
   state: 'Gujarat',
   address: '402, Shivalik Highstreet, Keshavbaug, Bodakdev, Ahmedabad - 380015',

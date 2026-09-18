@@ -152,7 +152,7 @@ export default function VendorDetails() {
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col items-end gap-1.5 self-start md:self-auto min-w-[190px]">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Merchant Payout Balance</span>
             <div className="text-xl font-extrabold text-slate-900 font-['Sora']">
-              ₹{vendor.payoutBalance.toLocaleString('en-IN')}
+              ₹{(Number(vendor.payoutBalance || 0)).toLocaleString('en-IN')}
             </div>
             {vendor.payoutBalance > 0 && (
               <button
@@ -170,19 +170,19 @@ export default function VendorDetails() {
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Revenue Generated</span>
             <div className="text-lg font-extrabold text-slate-900 font-['Sora'] mt-0.5">
-              ₹{vendor.revenue.toLocaleString('en-IN')}
+              ₹{(Number(vendor.revenue ?? vendor.totalRevenue ?? 0)).toLocaleString('en-IN')}
             </div>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Platform Commission</span>
             <div className="text-lg font-extrabold text-blue-600 font-['Sora'] mt-0.5">
-              ₹{vendor.commissionPaid.toLocaleString('en-IN')}
+              ₹{(Number(vendor.commissionPaid ?? Math.round((vendor.revenue || vendor.totalRevenue || 0) * 0.10))).toLocaleString('en-IN')}
             </div>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Inventory Listings</span>
             <div className="text-lg font-extrabold text-slate-900 font-['Sora'] mt-0.5">
-              {vendor.totalProducts} Equipment Units
+              {vendor.totalProducts || 0} Equipment Units
             </div>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">

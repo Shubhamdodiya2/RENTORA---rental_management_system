@@ -11,7 +11,7 @@ const api = axios.create({
 // Request interceptor: Attach JWT token if available
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token') || localStorage.getItem('rentora_token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -57,7 +57,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const storedRefreshToken = localStorage.getItem('rentora_refresh_token');
+        const storedRefreshToken = sessionStorage.getItem('rentora_refresh_token') || localStorage.getItem('rentora_refresh_token');
         const refreshResponse = await axios.post('/api/v1/auth/token/refresh', {
           refreshToken: storedRefreshToken
         }, { withCredentials: true });
@@ -65,8 +65,10 @@ api.interceptors.response.use(
         const { accessToken, refreshToken } = refreshResponse.data?.data || {};
 
         if (accessToken) {
+          sessionStorage.setItem('rentora_token', accessToken);
           localStorage.setItem('rentora_token', accessToken);
           if (refreshToken) {
+            sessionStorage.setItem('rentora_refresh_token', refreshToken);
             localStorage.setItem('rentora_refresh_token', refreshToken);
           }
           api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
@@ -75,6 +77,9 @@ api.interceptors.response.use(
         }
       } catch (refreshError) {
         processQueue(refreshError, null);
+        sessionStorage.removeItem('rentora_token');
+        sessionStorage.removeItem('rentora_refresh_token');
+        sessionStorage.removeItem('rentora_user');
         localStorage.removeItem('rentora_token');
         localStorage.removeItem('rentora_refresh_token');
         localStorage.removeItem('rentora_user');

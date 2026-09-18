@@ -156,7 +156,7 @@ export default function CustomerTopbar({ onOpenSidebar }) {
             aria-label="User profile menu"
           >
             <img 
-              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
+              src={(user?.avatar && !user.avatar.includes('photo-1534528741775-53994a69daeb')) ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.fullName || user?.name || 'Customer')}&background=1D3557&color=ffffff&bold=true`} 
               alt={user?.fullName || user?.name || 'Customer'} 
               className="topbar-user-avatar"
             />
@@ -202,7 +202,7 @@ export default function CustomerTopbar({ onOpenSidebar }) {
                 onClick={() => setProfileDropdownOpen(false)}
               >
                 <Package size={16} />
-                <span>Active Rentals (3)</span>
+                <span>Active Rentals</span>
               </Link>
 
               <div className="dropdown-divider" />

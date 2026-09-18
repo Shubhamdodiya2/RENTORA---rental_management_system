@@ -51,10 +51,12 @@ export default function ProductList() {
   // Filtered Products
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
+      const q = searchQuery.toLowerCase().trim();
       const matchesSearch =
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.sku && p.sku.toLowerCase().includes(q)) ||
+        (p.vendorName && p.vendorName.toLowerCase().includes(q));
 
       const matchesApproval = approvalFilter === 'all' || p.approvalStatus === approvalFilter;
       const matchesCategory = categoryFilter === 'all' || p.categorySlug === categoryFilter || p.category === categoryFilter;
@@ -264,9 +266,13 @@ export default function ProductList() {
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
                           <img
-                            src={product.images[0]}
+                            src={Array.isArray(product.images) && product.images[0] ? (product.images[0].imageUrl || product.images[0]) : (product.primaryImage || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80')}
                             alt={product.name}
                             className="w-12 h-12 rounded-xl object-cover border border-slate-200 flex-shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+                            }}
                           />
                           <div>
                             <div className="font-semibold text-slate-900 font-['Sora'] line-clamp-1">{product.name}</div>
@@ -280,23 +286,23 @@ export default function ProductList() {
 
                       {/* Vendor */}
                       <td className="py-4 px-4 font-medium text-slate-800">
-                        {product.vendorName}
+                        {product.vendorName || 'Store Vendor'}
                       </td>
 
                       {/* Rates */}
                       <td className="py-4 px-4">
                         <div className="font-bold text-slate-900 font-['Sora'] text-sm">
-                          ₹{product.pricePerDay.toLocaleString('en-IN')} <span className="text-[11px] font-normal text-slate-500">/ day</span>
+                          ₹{(Number(product.pricePerDay ?? product.dailyRate ?? 0)).toLocaleString('en-IN')} <span className="text-[11px] font-normal text-slate-500">/ day</span>
                         </div>
                         <span className="text-[10px] text-emerald-700 font-medium">
-                          Dep: ₹{product.deposit}
+                          Dep: ₹{(Number(product.deposit ?? product.securityDeposit ?? 0)).toLocaleString('en-IN')}
                         </span>
                       </td>
 
                       {/* Stock */}
                       <td className="py-4 px-4">
-                        <div className="font-semibold text-slate-800">{product.stock} Total</div>
-                        <span className="text-[10px] text-slate-500">{product.availableStock} Available</span>
+                        <div className="font-semibold text-slate-800">{product.stock ?? product.totalInventory ?? 1} Total</div>
+                        <span className="text-[10px] text-slate-500">{product.availableStock ?? product.availableInventory ?? 1} Available</span>
                       </td>
 
                       {/* Approval Status */}

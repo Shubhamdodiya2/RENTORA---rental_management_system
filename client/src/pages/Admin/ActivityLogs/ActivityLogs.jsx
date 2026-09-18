@@ -39,14 +39,16 @@ export default function ActivityLogs() {
   ];
 
   const filteredLogs = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return activityLogs.filter((log) => {
-      const matchesSearch =
-        log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.admin.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        log.ip?.toLowerCase().includes(searchQuery.toLowerCase());
+      const act = (log.action || '').toLowerCase();
+      const adm = (log.admin || '').toLowerCase();
+      const desc = (log.description || '').toLowerCase();
+      const ip = (log.ip || '').toLowerCase();
+      const mod = (log.module || '').toLowerCase();
 
-      const matchesModule = moduleFilter === 'all' || log.module === moduleFilter;
+      const matchesSearch = !q || act.includes(q) || adm.includes(q) || desc.includes(q) || ip.includes(q);
+      const matchesModule = moduleFilter === 'all' || mod.includes(moduleFilter.toLowerCase()) || moduleFilter.toLowerCase().includes(mod);
 
       return matchesSearch && matchesModule;
     });

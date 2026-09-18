@@ -23,11 +23,13 @@ import {
 } from 'lucide-react';
 import Logo from '../Logo/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
 import './Navbar.css';
 
 export default function Navbar() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { wishlistCount, openWishlist } = useWishlist();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -296,16 +298,17 @@ export default function Navbar() {
                 <span>Vendor Portal</span>
               </Link>
 
-              <Link 
-                to="/products"
+              <button 
+                type="button"
+                onClick={openWishlist}
                 aria-label="Wishlist"
-                className="relative p-2.5 text-[#1D3557] hover:text-[#E63946] rounded-xl hover:bg-[#F1FAEE] transition-colors"
+                className="relative p-2.5 text-[#1D3557] hover:text-[#E63946] rounded-xl hover:bg-[#F1FAEE] transition-colors cursor-pointer"
               >
-                <Heart size={18} />
-                <span className="absolute top-1 right-1 w-4 h-4 bg-[#E63946] text-white text-[9px] font-extrabold rounded-full flex items-center justify-center">
-                  2
+                <Heart size={18} fill={wishlistCount > 0 ? '#E63946' : 'none'} className={wishlistCount > 0 ? 'text-[#E63946]' : ''} />
+                <span className="absolute top-1 right-1 w-4 h-4 bg-[#E63946] text-white text-[9px] font-extrabold rounded-full flex items-center justify-center shadow-sm">
+                  {wishlistCount}
                 </span>
-              </Link>
+              </button>
 
               {/* User Authentication Status */}
               {isAuthenticated && user ? (
@@ -314,7 +317,7 @@ export default function Navbar() {
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                     className="flex items-center gap-2 p-1.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-bold text-[#1D3557] hover:bg-white transition-colors"
                   >
-                    <img src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'} alt={user.fullName || user.name || 'User'} className="w-6 h-6 rounded-full object-cover" />
+                    <img src={(user.avatar && !user.avatar.includes('photo-1534528741775-53994a69daeb')) ? user.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName || user.name || 'User')}&background=1D3557&color=ffffff&bold=true`} alt={user.fullName || user.name || 'User'} className="w-6 h-6 rounded-full object-cover" />
                     <span className="hidden sm:inline truncate max-w-[100px]">{(user.fullName || user.name || 'User').split(' ')[0]}</span>
                     <ChevronDown size={12} />
                   </button>

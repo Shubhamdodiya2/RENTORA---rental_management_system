@@ -84,8 +84,14 @@ export default function Signup() {
         city: customerData.city,
         role: 'customer'
       });
-      const returnTarget = location.state?.from;
-      navigate(returnTarget || '/customer/dashboard', { replace: true });
+      navigate('/login', {
+        replace: true,
+        state: {
+          registeredEmail: customerData.email.trim(),
+          registeredRole: 'customer',
+          successMessage: 'Account created successfully! Please log in with your email & password.'
+        }
+      });
     } catch (err) {
       setError(err.message || 'Registration failed. Please check your details.');
     } finally {
@@ -122,8 +128,14 @@ export default function Signup() {
         city: vendorData.city,
         role: 'vendor'
       });
-      const returnTarget = location.state?.from;
-      navigate(returnTarget || '/vendor/dashboard', { replace: true });
+      navigate('/login', {
+        replace: true,
+        state: {
+          registeredEmail: vendorData.email.trim(),
+          registeredRole: 'vendor',
+          successMessage: 'Vendor store registered successfully! Please log in with your credentials.'
+        }
+      });
     } catch (err) {
       setError(err.message || 'Vendor registration failed. Please check your details.');
     } finally {

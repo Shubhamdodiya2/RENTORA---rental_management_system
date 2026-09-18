@@ -159,6 +159,7 @@ function verifyMagicBytes(req, res, next) {
 
 module.exports = {
   uploadProductImage: uploadProducts.array('images', 5),
+  uploadSingleProductImage: uploadProducts.single('image'),
   uploadPaymentProof: uploadPaymentProof.single('proofFile'),
   uploadQrCode: uploadQrCode.single('qrCodeImage'),
   verifyMagicBytes

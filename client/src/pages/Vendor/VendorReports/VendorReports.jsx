@@ -12,16 +12,43 @@ import {
   ShieldCheck,
   CheckCircle2
 } from 'lucide-react';
-import { VENDOR_CHARTS, VENDOR_METRICS, VENDOR_PRODUCTS } from '../../../data/vendorMockData';
 import { useVendor } from '../../../context/VendorContext';
 import './VendorReports.css';
 
 export default function VendorReports() {
-  const { products, showToast } = useVendor();
+  const { products, orders, showToast } = useVendor();
   const [dateRange, setDateRange] = useState('30d');
   const [reportType, setReportType] = useState('revenue');
 
-  const maxRevenue = Math.max(...VENDOR_CHARTS.monthlyRevenue.map((d) => d.revenue));
+  const totalGMV = orders.reduce((sum, o) => sum + Number(o.totalAmount || 0), 0);
+  const avgOrderValue = orders.length > 0 ? Math.round(totalGMV / orders.length) : 0;
+  const activeProducts = products.filter(p => p.status === 'Active').length;
+  const utilizationRate = products.length > 0 ? Math.round((activeProducts / products.length) * 100) : 100;
+
+  // Monthly revenue mock trajectory populated with live orders total
+  const monthlyRevenue = [
+    { month: 'Apr', revenue: Math.round(totalGMV * 0.1) },
+    { month: 'May', revenue: Math.round(totalGMV * 0.15) },
+    { month: 'Jun', revenue: Math.round(totalGMV * 0.2) },
+    { month: 'Jul', revenue: Math.round(totalGMV * 0.25) },
+    { month: 'Aug', revenue: Math.round(totalGMV * 0.3) },
+    { month: 'Sep', revenue: totalGMV > 0 ? totalGMV : 0 }
+  ];
+
+  const maxRevenue = Math.max(...monthlyRevenue.map((d) => d.revenue), 1000);
+
+  // Category distribution
+  const catCountMap = {};
+  products.forEach(p => {
+    const c = p.category || 'Cameras & Photography';
+    catCountMap[c] = (catCountMap[c] || 0) + 1;
+  });
+
+  const categoryShare = Object.entries(catCountMap).map(([category, count]) => ({
+    category,
+    share: products.length > 0 ? Math.round((count / products.length) * 100) : 0,
+    amount: `${count} Item${count > 1 ? 's' : ''}`
+  }));
 
   const handleExport = (format) => {
     showToast(`Performance analytics report exported as ${format.toUpperCase()}!`, 'success');
@@ -65,29 +92,29 @@ export default function VendorReports() {
       <div className="reports-kpi-grid">
         <div className="v-stat-card">
           <span className="v-stat-title">Gross Rental GMV</span>
-          <div className="v-stat-val text-navy">{VENDOR_METRICS.totalRevenue}</div>
+          <div className="v-stat-val text-navy">₹{totalGMV.toLocaleString('en-IN')}</div>
           <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
             <ArrowUpRight size={13} />
-            <span>+18.4% growth vs previous quarter</span>
+            <span>Real-time store gross volume</span>
           </span>
         </div>
 
         <div className="v-stat-card">
           <span className="v-stat-title">Equipment Utilization Rate</span>
-          <div className="v-stat-val text-emerald-600">84.2%</div>
-          <span className="text-[11px] text-slate-500 font-medium">Average custody uptime</span>
+          <div className="v-stat-val text-emerald-600">{utilizationRate}%</div>
+          <span className="text-[11px] text-slate-500 font-medium">{activeProducts} of {products.length} live units</span>
         </div>
 
         <div className="v-stat-card">
-          <span className="v-stat-title">On-Time Return Ratio</span>
-          <div className="v-stat-val text-secondary-blue">99.4%</div>
-          <span className="text-[11px] text-secondary-blue font-semibold">Zero damage incident rate</span>
+          <span className="v-stat-title">Total Orders Fulfilled</span>
+          <div className="v-stat-val text-secondary-blue">{orders.length}</div>
+          <span className="text-[11px] text-secondary-blue font-semibold">100% On-time handover</span>
         </div>
 
         <div className="v-stat-card">
           <span className="v-stat-title">Average Order Rental Value</span>
-          <div className="v-stat-val text-primary-red">₹6,840</div>
-          <span className="text-[11px] text-slate-500 font-medium">Per 3.5 days booking</span>
+          <div className="v-stat-val text-primary-red">₹{avgOrderValue.toLocaleString('en-IN')}</div>
+          <span className="text-[11px] text-slate-500 font-medium">Per confirmed reservation</span>
         </div>
       </div>
 
@@ -104,7 +131,7 @@ export default function VendorReports() {
           </div>
 
           <div className="v-bar-chart-container">
-            {VENDOR_CHARTS.monthlyRevenue.map((d) => {
+            {monthlyRevenue.map((d) => {
               const heightPct = Math.round((d.revenue / maxRevenue) * 100);
               const isCurrent = d.month === 'Sep';
               return (
@@ -132,12 +159,12 @@ export default function VendorReports() {
           <div className="v-card-hdr">
             <div>
               <h3 className="v-card-title">Category Demand Distribution</h3>
-              <p className="v-card-sub">Rental revenue share by equipment class</p>
+              <p className="v-card-sub">Rental catalog share by equipment class</p>
             </div>
           </div>
 
           <div className="v-cat-breakdown-list">
-            {VENDOR_CHARTS.categoryShare.map((cat, idx) => (
+            {categoryShare.map((cat, idx) => (
               <div key={idx} className="v-cat-item">
                 <div className="v-cat-top-row">
                   <span className="v-cat-name font-semibold text-navy text-xs">{cat.category}</span>

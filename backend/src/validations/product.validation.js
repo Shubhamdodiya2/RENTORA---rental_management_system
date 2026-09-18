@@ -188,7 +188,7 @@ function validateCatalogExploreQuery(query) {
   sanitized.page = !isNaN(page) && page >= 1 ? page : 1;
 
   const limit = parseInt(query.limit, 10);
-  sanitized.limit = !isNaN(limit) && limit >= 1 && limit <= 50 ? limit : 12;
+  sanitized.limit = !isNaN(limit) && limit >= 1 && limit <= 100 ? limit : 12;
 
   return {
     isValid: Object.keys(errors).length === 0,

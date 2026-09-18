@@ -107,7 +107,7 @@ class AuthController {
           city: city || 'Ahmedabad',
           businessPhone: phone || null,
           businessEmail: email.toLowerCase(),
-          verificationStatus: 'Pending',
+          verificationStatus: 'Approved',
           commissionRate: 10.00
         }, { transaction: t });
       }
@@ -460,21 +460,88 @@ class AuthController {
    * PATCH /api/v1/auth/profile
    */
   static async updateProfile(req, res) {
-    const { fullName, phone, avatarUrl } = req.body;
+    const {
+      fullName,
+      phone,
+      avatarUrl,
+      // Vendor fields
+      businessName,
+      businessAddress,
+      businessPhone,
+      businessEmail,
+      city,
+      state,
+      gstNumber,
+      website,
+      workingHours,
+      description,
+      upiId,
+      qrCodeUrl,
+      bankAccount,
+      // Customer fields
+      address,
+      pincode,
+      refundUpi
+    } = req.body;
+
     const user = req.user;
 
     try {
       if (fullName && fullName.trim()) user.fullName = fullName.trim();
       if (phone !== undefined) user.phone = phone;
       if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
-
       await user.save();
+
+      let updatedVendorProfile = null;
+      let updatedCustomerProfile = null;
+
+      // Handle Vendor Profile Update
+      const vendorProfile = await VendorProfile.findOne({ where: { userId: user.id } });
+      if (vendorProfile) {
+        if (businessName) vendorProfile.businessName = businessName;
+        if (businessAddress !== undefined) vendorProfile.businessAddress = businessAddress;
+        if (businessPhone !== undefined) vendorProfile.businessPhone = businessPhone;
+        if (businessEmail !== undefined) vendorProfile.businessEmail = businessEmail;
+        if (city) vendorProfile.city = city;
+        if (state) vendorProfile.state = state;
+        if (gstNumber !== undefined) vendorProfile.gstNumber = gstNumber;
+        if (website !== undefined) vendorProfile.website = website;
+        if (workingHours !== undefined) vendorProfile.workingHours = workingHours;
+        if (description !== undefined) vendorProfile.description = description;
+
+        if (upiId || qrCodeUrl || bankAccount) {
+          const currentBank = vendorProfile.bankAccountMasked || {};
+          vendorProfile.bankAccountMasked = {
+            ...currentBank,
+            ...(upiId !== undefined ? { upiId } : {}),
+            ...(qrCodeUrl !== undefined ? { qrCodeUrl } : {}),
+            ...(bankAccount !== undefined ? { bankAccount } : {})
+          };
+        }
+        await vendorProfile.save();
+        updatedVendorProfile = vendorProfile;
+      }
+
+      // Handle Customer Profile Update
+      const customerProfile = await CustomerProfile.findOne({ where: { userId: user.id } });
+      if (customerProfile) {
+        if (address !== undefined) customerProfile.address = address;
+        if (city) customerProfile.city = city;
+        if (state) customerProfile.state = state;
+        if (pincode !== undefined) customerProfile.pincode = pincode;
+        if (refundUpi !== undefined) customerProfile.refundUpi = refundUpi;
+        await customerProfile.save();
+        updatedCustomerProfile = customerProfile;
+      }
 
       return ApiResponse.success(res, 'Profile updated successfully', {
         user: user.toJSON(),
-        roles: req.roles
+        roles: req.roles,
+        vendorProfile: updatedVendorProfile,
+        customerProfile: updatedCustomerProfile
       });
     } catch (error) {
+      console.error('[Update Profile Error]:', error);
       return ApiResponse.error(res, 'Failed to update profile', error.message, 500);
     }
   }
@@ -521,7 +588,7 @@ class AuthController {
           city: city || 'Ahmedabad',
           businessPhone: businessPhone || user.phone || null,
           businessEmail: user.email,
-          verificationStatus: 'Pending',
+          verificationStatus: 'Approved',
           commissionRate: 10.00
         }, { transaction: t });
       }

@@ -33,24 +33,32 @@ export default function VendorOverview() {
   const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Compute live stats
-  const activeProducts = products.filter((p) => p.status === 'Active').length;
-  const lowStockProducts = products.filter((p) => p.status === 'Low Stock' || p.status === 'Out of Stock').length;
-  const pendingOrders = orders.filter((o) => o.orderStatus === 'Confirmed' || o.orderStatus === 'Processing').length;
+  const activeProducts = products.filter((p) => p.status === 'Active' || p.status === 'PUBLISHED').length;
+  const lowStockProducts = products.filter((p) => (p.availableStock !== undefined ? p.availableStock <= (p.minStockAlert || 1) : false)).length;
+  const pendingOrders = orders.filter((o) => o.orderStatus === 'Confirmed' || o.orderStatus === 'Processing' || o.status === 'BOOKING_CONFIRMED' || o.status === 'CONFIRMED').length;
+
+  const totalRevenueNum = orders.reduce((sum, o) => sum + Number(o.totalAmount || o.rentalAmount || 0), 0);
+  const totalRevenueFormatted = `₹${totalRevenueNum.toLocaleString('en-IN')}`;
+
+  const pendingPayoutNum = orders
+    .filter((o) => o.orderStatus === 'Confirmed' || o.orderStatus === 'Active' || o.status === 'BOOKING_CONFIRMED')
+    .reduce((sum, o) => sum + Number(o.rentalAmount || 0), 0);
+  const pendingPayoutFormatted = `₹${pendingPayoutNum.toLocaleString('en-IN')}`;
 
   const filteredOrders = orders.filter((o) => {
-    if (orderFilter !== 'All' && o.orderStatus !== orderFilter) return false;
+    if (orderFilter !== 'All' && o.orderStatus !== orderFilter && o.status !== orderFilter) return false;
     if (orderSearch.trim()) {
       const q = orderSearch.toLowerCase();
       return (
-        o.orderId.toLowerCase().includes(q) ||
-        o.customer.name.toLowerCase().includes(q) ||
-        o.product.name.toLowerCase().includes(q)
+        (o.orderId && o.orderId.toLowerCase().includes(q)) ||
+        (o.customer?.name && o.customer.name.toLowerCase().includes(q)) ||
+        (o.product?.name && o.product.name.toLowerCase().includes(q))
       );
     }
     return true;
   });
 
-  const maxRevenue = Math.max(...VENDOR_CHARTS.monthlyRevenue.map((d) => d.revenue));
+  const maxRevenue = Math.max(10000, ...VENDOR_CHARTS.monthlyRevenue.map((d) => d.revenue));
 
   return (
     <div className="vendor-overview-page">
@@ -59,9 +67,9 @@ export default function VendorOverview() {
         <div className="v-welcome-left">
           <div className="v-verified-badge">
             <Sparkles size={14} className="text-amber-300" />
-            <span>{vendorProfile.verifiedBadge} &bull; Store Rating {vendorProfile.rating} ★</span>
+            <span>{vendorProfile.verifiedBadge || 'Rentora Verified Vendor'} &bull; Store Rating {vendorProfile.rating || 4.9} ★</span>
           </div>
-          <h1 className="v-welcome-heading">Welcome, {vendorProfile.vendorName}! 👋</h1>
+          <h1 className="v-welcome-heading">Welcome, {vendorProfile.vendorName || 'Store Owner'}! 👋</h1>
           <p className="v-welcome-sub">
             Here is your live rental operations pulse for <strong>{vendorProfile.businessName}</strong>.
           </p>
@@ -84,11 +92,11 @@ export default function VendorOverview() {
 
         <div className="v-welcome-right">
           <div className="v-earnings-capsule">
-            <span className="v-earn-label">September Net Payouts</span>
-            <span className="v-earn-value">{VENDOR_METRICS.monthlyEarnings}</span>
+            <span className="v-earn-label">Store Revenue</span>
+            <span className="v-earn-value">{totalRevenueFormatted}</span>
             <span className="v-earn-trend text-emerald-300">
               <TrendingUp size={13} className="inline mr-1" />
-              {VENDOR_METRICS.revenueGrowthPct} vs last month
+              Live Ledger Balance
             </span>
           </div>
         </div>
@@ -119,7 +127,7 @@ export default function VendorOverview() {
           </div>
           <div className="v-stat-val text-emerald-600">{activeProducts}</div>
           <div className="v-stat-footer">
-            <span className="text-emerald-600 font-semibold">92% catalog availability</span>
+            <span className="text-emerald-600 font-semibold">{products.length > 0 ? `${Math.round((activeProducts / products.length) * 100)}% available` : '0 listed'}</span>
             <Link to="/vendor/products" className="v-stat-link">Catalog &rarr;</Link>
           </div>
         </div>
@@ -133,7 +141,7 @@ export default function VendorOverview() {
           </div>
           <div className="v-stat-val text-secondary-blue">{pendingOrders}</div>
           <div className="v-stat-footer">
-            <span className="text-amber-600 font-semibold">Require staging & dispatch</span>
+            <span className="text-amber-600 font-semibold">{pendingOrders > 0 ? 'Require dispatch' : 'All clear'}</span>
             <Link to="/vendor/orders" className="v-stat-link">Fulfill &rarr;</Link>
           </div>
         </div>
@@ -145,9 +153,9 @@ export default function VendorOverview() {
               <Wallet size={20} className="text-primary-red" />
             </div>
           </div>
-          <div className="v-stat-val text-primary-red">{VENDOR_METRICS.totalRevenue}</div>
+          <div className="v-stat-val text-primary-red">{totalRevenueFormatted}</div>
           <div className="v-stat-footer">
-            <span className="text-emerald-600 font-semibold">+18.4% YoY Growth</span>
+            <span className="text-emerald-600 font-semibold">{orders.length} total orders</span>
             <Link to="/vendor/reports" className="v-stat-link">Analytics &rarr;</Link>
           </div>
         </div>
@@ -173,7 +181,7 @@ export default function VendorOverview() {
               <CreditCard size={20} className="text-secondary-blue" />
             </div>
           </div>
-          <div className="v-stat-val text-navy">{VENDOR_METRICS.pendingPayments}</div>
+          <div className="v-stat-val text-navy">{pendingPayoutFormatted}</div>
           <div className="v-stat-footer">
             <span className="text-slate-500 font-medium">Settles after return check</span>
             <Link to="/vendor/payments" className="v-stat-link">Ledger &rarr;</Link>
@@ -292,72 +300,80 @@ export default function VendorOverview() {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.slice(0, 5).map((o) => (
-                <tr key={o.id} className="v-table-row">
-                  <td>
-                    <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded">
-                      {o.orderId}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="v-cust-cell">
-                      <img src={o.customer.avatar} alt={o.customer.name} className="v-cust-thumb" />
-                      <div>
-                        <div className="v-cust-name font-semibold text-navy text-xs">{o.customer.name}</div>
-                        <div className="text-[11px] text-slate-400">{o.customer.city}</div>
+              {filteredOrders.length > 0 ? (
+                filteredOrders.slice(0, 5).map((o) => (
+                  <tr key={o.id} className="v-table-row">
+                    <td>
+                      <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded">
+                        {o.orderId}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="v-cust-cell">
+                        <img src={(o.customer?.avatar && !o.customer.avatar.includes('photo-1534528741775-53994a69daeb')) ? o.customer.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(o.customer?.name || 'Customer')}&background=1D3557&color=ffffff&bold=true`} alt={o.customer?.name || 'Customer'} className="v-cust-thumb" />
+                        <div>
+                          <div className="v-cust-name font-semibold text-navy text-xs">{o.customer?.name || 'Customer'}</div>
+                          <div className="text-[11px] text-slate-400">{o.customer?.city || 'Ahmedabad'}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="v-prod-cell">
-                      <img src={o.product.image} alt={o.product.name} className="v-prod-thumb" />
-                      <div>
-                        <div className="v-prod-name text-xs font-semibold text-navy">{o.product.name}</div>
-                        <div className="text-[10px] text-slate-400 font-mono">SKU: {o.product.sku}</div>
+                    </td>
+                    <td>
+                      <div className="v-prod-cell">
+                        <img src={o.product?.image || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80'} alt={o.product?.name || 'Item'} className="v-prod-thumb" />
+                        <div>
+                          <div className="v-prod-name text-xs font-semibold text-navy">{o.product?.name || 'Equipment'}</div>
+                          <div className="text-[10px] text-slate-400 font-mono">SKU: {o.product?.sku || 'SKU-001'}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="text-xs text-slate-600 font-medium">
-                      {o.startDate} &rarr; {o.endDate}
-                    </span>
-                    <div className="text-[10px] text-slate-400">{o.durationDays} Days Duration</div>
-                  </td>
-                  <td>
-                    <div className="font-bold text-navy text-xs">
-                      ₹{o.totalAmount.toLocaleString('en-IN')}
-                    </div>
-                    <div className="text-[10px] text-emerald-600">
-                      (₹{o.securityDeposit} Escrow)
-                    </div>
-                  </td>
-                  <td>
-                    <span
-                      className={`v-status-badge ${
-                        o.orderStatus === 'Active'
-                          ? 'status-active'
-                          : o.orderStatus === 'Confirmed'
-                          ? 'status-confirmed'
-                          : o.orderStatus === 'Processing'
-                          ? 'status-processing'
-                          : 'status-completed'
-                      }`}
-                    >
-                      {o.orderStatus}
-                    </span>
-                  </td>
-                  <td>
-                    <button
-                      onClick={() => setSelectedOrder(o)}
-                      className="btn-v-action-view"
-                      title="View Order Details"
-                    >
-                      <Eye size={14} />
-                      <span>Details</span>
-                    </button>
+                    </td>
+                    <td>
+                      <span className="text-xs text-slate-600 font-medium">
+                        {o.startDate} &rarr; {o.endDate}
+                      </span>
+                      <div className="text-[10px] text-slate-400">{o.durationDays} Days Duration</div>
+                    </td>
+                    <td>
+                      <div className="font-bold text-navy text-xs">
+                        ₹{(o.totalAmount || 0).toLocaleString('en-IN')}
+                      </div>
+                      <div className="text-[10px] text-emerald-600">
+                        (₹{o.securityDeposit || 0} Escrow)
+                      </div>
+                    </td>
+                    <td>
+                      <span
+                        className={`v-status-badge ${
+                          o.orderStatus === 'Active'
+                            ? 'status-active'
+                            : o.orderStatus === 'Confirmed'
+                            ? 'status-confirmed'
+                            : o.orderStatus === 'Processing'
+                            ? 'status-processing'
+                            : 'status-completed'
+                        }`}
+                      >
+                        {o.orderStatus || 'Confirmed'}
+                      </span>
+                    </td>
+                    <td>
+                      <button
+                        onClick={() => setSelectedOrder(o)}
+                        className="btn-v-action-view"
+                        title="View Order Details"
+                      >
+                        <Eye size={14} />
+                        <span>Details</span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="text-center py-8 text-slate-400 text-xs">
+                    No rental orders received yet. Once customers reserve your equipment, new bookings will appear here.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

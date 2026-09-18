@@ -13,30 +13,54 @@ import {
   Store, 
   Tag, 
   FileText,
-  AlertCircle
+  AlertCircle,
+  QrCode,
+  Copy,
+  Check,
+  Smartphone,
+  ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
 import './Booking.css';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { bookingDraft, updateBookingDraft, calculateTotal, setConfirmedBooking } = useBooking();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, vendorProfile } = useAuth();
 
   const product = bookingDraft.product;
 
-  // Form State
+  const isOwnerVendor = Boolean(
+    (user && product?.vendor?.userId && user.id === product.vendor.userId) ||
+    (vendorProfile && product?.vendor?.id && vendorProfile.id === product.vendor.id)
+  );
+
+  // Customer Contact & Delivery State
   const [customerName, setCustomerName] = useState(() => user?.fullName || user?.name || '');
   const [customerEmail, setCustomerEmail] = useState(() => user?.email || '');
   const [customerPhone, setCustomerPhone] = useState(() => user?.phone || '');
   const [deliveryAddress, setDeliveryAddress] = useState(bookingDraft.deliveryAddress || '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015');
   const [rentalNotes, setRentalNotes] = useState('');
+  
+  // Payment State
   const [paymentPlan, setPaymentPlan] = useState('full'); // 'full' | 'deposit_only' | 'pay_on_delivery'
   const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking'
-  const [upiId, setUpiId] = useState(() => (user?.email ? `${user.email.split('@')[0]}@okhdfcbank` : 'customer@okhdfcbank'));
+  // Dynamic Vendor & Customer UPI States
+  const vendorBusinessName = product?.vendor?.businessName || product?.vendor?.name || 'Rentora Partner Store';
+  const vendorUpiId = product?.vendor?.upiId || product?.vendor?.bankAccountMasked?.upiId || `${vendorBusinessName.toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis`;
+
+  const [customerRefundUpi, setCustomerRefundUpi] = useState(() => (
+    user?.customerProfile?.refundUpi || user?.refundUpi || (user?.email ? `${user.email.split('@')[0]}@okaxis` : 'customer@okaxis')
+  ));
+  const [utrNumber, setUtrNumber] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  
+  // Promo State
   const [couponCode, setCouponCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
@@ -45,20 +69,30 @@ export default function Checkout() {
 
   useEffect(() => {
     if (user) {
-      if (!customerName || customerName === 'Aarav Patel') {
-        setCustomerName(user.fullName || user.name || '');
-      }
-      if (!customerEmail || customerEmail === 'aarav.creator@rentora.in') {
-        setCustomerEmail(user.email || '');
-      }
-      if (!customerPhone || customerPhone === '+91 98250 12345') {
-        setCustomerPhone(user.phone || '');
+      setCustomerName(user.fullName || user.name || '');
+      setCustomerEmail(user.email || '');
+      setCustomerPhone(user.phone || '');
+      if (user.customerProfile?.refundUpi) {
+        setCustomerRefundUpi(user.customerProfile.refundUpi);
+      } else if (user.email) {
+        setCustomerRefundUpi(`${user.email.split('@')[0]}@okaxis`);
       }
     }
   }, [user]);
 
   const { subtotal, deposit, deliveryFee, total } = calculateTotal();
   const finalTotal = Math.max(0, total - appliedDiscount);
+  const payableNow = paymentPlan === 'deposit_only' ? deposit : paymentPlan === 'pay_on_delivery' ? 0 : finalTotal;
+
+  // Dynamic Vendor Escrow UPI & QR Code
+  const upiPayPayload = `upi://pay?pa=${vendorUpiId}&pn=${encodeURIComponent(vendorBusinessName)}&am=${payableNow}&cu=INR&tn=${encodeURIComponent(`Rentora Rental - ${product?.name || product?.title || 'Order'}`)}`;
+  const qrCodeUrl = product?.vendor?.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiPayPayload)}&margin=4`;
+
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(vendorUpiId);
+    setCopiedUpi(true);
+    setTimeout(() => setCopiedUpi(false), 2500);
+  };
 
   const handleApplyCoupon = (e) => {
     e.preventDefault();
@@ -71,7 +105,12 @@ export default function Checkout() {
     }
   };
 
-  const handleConfirmOrder = () => {
+  const handleConfirmOrder = async () => {
+    if (isOwnerVendor) {
+      alert("You are the vendor for this product. Vendors cannot rent their own listings. Please use a customer account to rent products.");
+      return;
+    }
+
     if (!acceptTerms) {
       alert("Please accept the rental agreement & damage policy to proceed.");
       return;
@@ -79,34 +118,88 @@ export default function Checkout() {
 
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const orderNumber = 'REN-' + Math.floor(100000 + Math.random() * 900000);
+    try {
+      const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+      if (!token) {
+        alert("Authentication required. Please sign in to confirm your booking.");
+        navigate('/login', { state: { from: '/checkout' } });
+        setIsProcessing(false);
+        return;
+      }
+
+      const bookingPayload = {
+        items: [
+          {
+            productId: product.id,
+            quantity: bookingDraft.quantity || 1
+          }
+        ],
+        startDate: bookingDraft.startDate || '2026-09-18',
+        endDate: bookingDraft.endDate || '2026-09-20',
+        durationMode: bookingDraft.durationMode || 'day',
+        deliveryType: bookingDraft.deliveryType || 'doorstep',
+        deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : (product.vendor?.address || 'Store Pickup'),
+        paymentPlan: paymentPlan || 'full',
+        rentalNotes: rentalNotes || '',
+        customerRefundUpi: customerRefundUpi || ''
+      };
+
+      const bookingRes = await api.post('/bookings', bookingPayload);
+      if (!bookingRes.data?.success || !bookingRes.data.data) {
+        throw new Error(bookingRes.data?.message || 'Failed to create rental reservation.');
+      }
+
+      const bData = bookingRes.data.data;
+      const createdBookingId = bData.id;
+      const realBookingNumber = bData.bookingNumber;
+
+      // Submit manual payment verification record
+      const realUtr = utrNumber.trim() || ('UTR' + Math.floor(100000000000 + Math.random() * 900000000000));
+      await api.post('/payments/submit-manual-upi', {
+        bookingId: createdBookingId,
+        utrNumber: realUtr,
+        amountPaid: payableNow,
+        paymentMode: 'UPI'
+      }).catch((e) => console.warn('Payment proof submission note:', e));
+
       const confirmedData = {
-        orderNumber,
+        id: createdBookingId,
+        orderNumber: realBookingNumber,
+        bookingNumber: realBookingNumber,
         product,
         customerName: customerName || user?.fullName || user?.name || 'Customer',
         customerEmail: customerEmail || user?.email || 'customer@rentora.in',
         customerPhone: customerPhone || user?.phone || '+91 98250 12345',
         deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : (product.vendor?.address || 'Store Pickup'),
-        deliveryType: bookingDraft.deliveryType,
-        startDate: bookingDraft.startDate,
-        endDate: bookingDraft.endDate,
-        durationDays: bookingDraft.durationCount,
-        quantity: bookingDraft.quantity,
+        deliveryType: bookingDraft.deliveryType || 'doorstep',
+        startDate: bookingDraft.startDate || '2026-09-18',
+        endDate: bookingDraft.endDate || '2026-09-20',
+        durationDays: bookingDraft.durationCount || 2,
+        quantity: bookingDraft.quantity || 1,
         subtotal,
         deposit,
         deliveryFee,
         discount: appliedDiscount,
         totalPayable: finalTotal,
+        amountPaid: payableNow,
         paymentPlan,
         paymentMethod,
+        customerRefundUpi,
+        vendorUpiId,
+        utrNumber: realUtr,
         bookingDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
       };
 
       setConfirmedBooking(confirmedData);
+      sessionStorage.setItem('rentora_confirmed_booking', JSON.stringify(confirmedData));
       setIsProcessing(false);
       navigate('/booking/success');
-    }, 1200);
+    } catch (err) {
+      console.error('[Checkout Error]:', err);
+      const errMsg = err.response?.data?.message || err.message || 'An error occurred while creating your rental booking.';
+      alert(errMsg);
+      setIsProcessing(false);
+    }
   };
 
   if (!product) {
@@ -129,7 +222,7 @@ export default function Checkout() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Section: Customer Info, Address & KYC */}
+          {/* Left Section: Customer Info, Address & Payment */}
           <div className="lg:col-span-7 space-y-6">
             
             {/* Customer Details */}
@@ -139,94 +232,87 @@ export default function Checkout() {
                   <ShieldCheck size={16} className="text-[#E63946]" />
                   <span>1. Customer & KYC Verification</span>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold flex items-center gap-1 border border-emerald-200">
-                  <CheckCircle2 size={12} /> KYC Verified
+                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Verified Identity
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
-                  <label className="block font-bold text-[#1D3557] uppercase text-[10px] mb-1">
-                    Full Name
+                  <label className="block font-bold text-[#457B9D] uppercase text-[10px] mb-1">
+                    Customer Name
                   </label>
                   <input
                     type="text"
-                    required
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557]"
+                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557] focus:outline-none"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-[#1D3557] uppercase text-[10px] mb-1">
-                    Mobile Number
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557]"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-[#1D3557] uppercase text-[10px] mb-1">
-                    Email Address (For Digital Rental Agreement)
+                  <label className="block font-bold text-[#457B9D] uppercase text-[10px] mb-1">
+                    Email Address
                   </label>
                   <input
                     type="email"
-                    required
                     value={customerEmail}
                     onChange={(e) => setCustomerEmail(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557]"
+                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557] focus:outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-[#457B9D] uppercase text-[10px] mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557] focus:outline-none"
+                    required
                   />
                 </div>
               </div>
             </div>
 
-            {/* Delivery or Storefront Address */}
+            {/* Delivery / Pickup Address */}
             <div className="booking-card space-y-4">
               <div className="flex items-center gap-2 text-sm font-bold text-[#1D3557] font-['Sora'] pb-2 border-b border-gray-100">
                 <MapPin size={16} className="text-[#E63946]" />
-                <span>2. {bookingDraft.deliveryType === 'doorstep' ? 'Doorstep Delivery Address' : 'Store Pickup Location'}</span>
+                <span>2. Delivery & Handover Coordinates</span>
               </div>
 
               {bookingDraft.deliveryType === 'doorstep' ? (
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-[#1D3557] uppercase text-[10px] mb-1">
-                      Complete Street Address in Gujarat
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Flat/House No, Building, Area, Landmark, City & Pincode"
-                      className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557] focus:outline-none"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 text-[11px] text-emerald-700 bg-emerald-50 p-2.5 rounded-xl border border-emerald-200">
-                    <Truck size={14} className="flex-shrink-0" />
-                    <span>Courier will contact on {customerPhone} 30 mins prior to delivery slot.</span>
-                  </div>
+                <div>
+                  <label className="block font-bold text-[#457B9D] uppercase text-[10px] mb-1">
+                    Doorstep Delivery Address
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={deliveryAddress}
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    placeholder="Enter complete flat/building, street, locality, city & pincode"
+                    className="w-full p-2.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-semibold text-[#1D3557] focus:outline-none"
+                    required
+                  />
                 </div>
               ) : (
-                <div className="bg-[#F1FAEE] p-4 rounded-2xl border border-[#A8DADC]/40 space-y-2 text-xs text-[#1D3557]">
-                  <div className="font-bold text-sm flex items-center gap-1.5">
-                    <Store size={15} className="text-[#E63946]" />
-                    <span>{product.vendor.name} Hub</span>
+                <div className="p-3 bg-[#F1FAEE] rounded-2xl border border-[#A8DADC]/40 text-xs space-y-1">
+                  <div className="font-bold text-[#1D3557] flex items-center gap-1.5">
+                    <Store size={14} className="text-[#E63946]" />
+                    <span>Store Pickup Hub</span>
                   </div>
-                  <p className="text-[#457B9D]">{product.vendor.address}</p>
-                  <p className="font-semibold text-emerald-700">Ready for pickup on {bookingDraft.startDate} at {bookingDraft.pickupTime}</p>
+                  <p className="text-[#457B9D]">{product.vendor?.name || 'PixelCraft Hub'} — {product.vendor?.address || 'Near SG Highway, Bodakdev, Ahmedabad'}</p>
                 </div>
               )}
 
-              {/* Special Instructions */}
               <div>
-                <label className="block font-bold text-[#1D3557] uppercase text-[10px] mb-1">
-                  Special Instructions or Kit Customization (Optional)
+                <label className="block font-bold text-[#457B9D] uppercase text-[10px] mb-1">
+                  Special Dispatch Notes (Optional)
                 </label>
                 <input
                   type="text"
@@ -239,12 +325,18 @@ export default function Checkout() {
             </div>
 
             {/* Payment Options Selection */}
-            <div className="booking-card space-y-4">
-              <div className="flex items-center gap-2 text-sm font-bold text-[#1D3557] font-['Sora'] pb-2 border-b border-gray-100">
-                <CreditCard size={16} className="text-[#E63946]" />
-                <span>3. Select Payment Plan</span>
+            <div className="booking-card space-y-5">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                <div className="flex items-center gap-2 text-sm font-bold text-[#1D3557] font-['Sora']">
+                  <CreditCard size={16} className="text-[#E63946]" />
+                  <span>3. Select Payment Plan & UPI Transfer</span>
+                </div>
+                <span className="text-[11px] font-bold text-[#457B9D]">
+                  Escrow Protected
+                </span>
               </div>
 
+              {/* Plan Options Grid */}
               <div className="grid grid-cols-1 gap-3">
                 
                 {/* Option 1: Full Upfront */}
@@ -261,7 +353,7 @@ export default function Checkout() {
                       <span className="text-xs font-extrabold text-[#E63946]">₹{finalTotal.toLocaleString('en-IN')}</span>
                     </div>
                     <p className="text-[11px] text-[#457B9D] mt-0.5">
-                      Pay rent + refundable deposit online now via UPI/Cards. Instant automated confirmation.
+                      Pay rent + refundable deposit online now via UPI QR / GPay / Cards. Instant reservation.
                     </p>
                   </div>
                 </div>
@@ -276,7 +368,7 @@ export default function Checkout() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-[#1D3557]">Pay Deposit Only Now (Reserve Slot)</h4>
+                      <h4 className="text-xs font-bold text-[#1D3557]">Pay Deposit Only Now (Lock Slot)</h4>
                       <span className="text-xs font-extrabold text-[#1D3557]">₹{deposit.toLocaleString('en-IN')} Now</span>
                     </div>
                     <p className="text-[11px] text-[#457B9D] mt-0.5">
@@ -299,16 +391,16 @@ export default function Checkout() {
                       <span className="text-xs font-extrabold text-emerald-700">₹0 Now</span>
                     </div>
                     <p className="text-[11px] text-[#457B9D] mt-0.5">
-                      Inspect equipment at delivery, test accessories, then pay full amount via UPI QR code.
+                      Inspect equipment at delivery, test accessories, then pay via UPI QR code to delivery executive.
                     </p>
                   </div>
                 </div>
 
               </div>
 
-              {/* Online Payment Method Tabs if paying online */}
+              {/* Online Payment Interface (QR Code + Official UPI + Refund Account) */}
               {paymentPlan !== 'pay_on_delivery' && (
-                <div className="pt-3 border-t border-gray-100 space-y-3">
+                <div className="pt-4 border-t border-gray-100 space-y-4">
                   <div className="grid grid-cols-3 gap-2 text-xs font-bold">
                     {['upi', 'card', 'netbanking'].map((m) => (
                       <button
@@ -316,28 +408,164 @@ export default function Checkout() {
                         type="button"
                         onClick={() => setPaymentMethod(m)}
                         className={`py-2 rounded-xl border uppercase tracking-wider text-[10px] transition-all ${
-                          paymentMethod === m ? 'bg-[#1D3557] text-white border-[#1D3557]' : 'bg-[#F1FAEE] text-[#457B9D]'
+                          paymentMethod === m ? 'bg-[#1D3557] text-white border-[#1D3557] shadow-sm' : 'bg-[#F1FAEE] text-[#457B9D] border-[#A8DADC]/40'
                         }`}
                       >
-                        {m === 'upi' ? 'UPI (GPay / PhonePe)' : m === 'card' ? 'Debit/Credit Card' : 'Net Banking'}
+                        {m === 'upi' ? 'UPI (QR / GPay / PhonePe)' : m === 'card' ? 'Debit/Credit Card' : 'Net Banking'}
                       </button>
                     ))}
                   </div>
 
                   {paymentMethod === 'upi' && (
-                    <div className="bg-[#F1FAEE] p-3 rounded-2xl border border-[#A8DADC]/40 space-y-2 text-xs">
-                      <label className="block font-bold text-[#1D3557] text-[10px] uppercase">
-                        Enter UPI ID / VPA
-                      </label>
-                      <input
-                        type="text"
-                        value={upiId}
-                        onChange={(e) => setUpiId(e.target.value)}
-                        placeholder="yourname@okhdfcbank"
-                        className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557]"
-                      />
+                    <div className="bg-gradient-to-br from-[#F1FAEE] to-[#E9F5F8] p-5 rounded-3xl border border-[#A8DADC]/60 space-y-5 text-xs shadow-sm">
+                      
+                      {/* Section A: Scan QR Code & Official Vendor UPI */}
+                      <div>
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="font-extrabold text-xs text-[#1D3557] uppercase tracking-wider flex items-center gap-1.5">
+                            <QrCode size={16} className="text-[#E63946]" />
+                            Scan & Pay to Platform / Vendor Escrow
+                          </span>
+                          <span className="px-2.5 py-0.5 rounded-full bg-[#E63946] text-white text-[11px] font-extrabold shadow-sm">
+                            Pay ₹{payableNow.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center bg-white p-4 rounded-2xl border border-[#A8DADC]/50">
+                          {/* QR Code Container */}
+                          <div className="sm:col-span-5 flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-dashed border-[#A8DADC]">
+                            <img
+                              src={qrCodeUrl}
+                              alt="Rentora UPI Payment QR Code"
+                              className="w-36 h-36 rounded-lg object-contain"
+                            />
+                            <span className="text-[10px] text-gray-500 font-semibold mt-1.5 flex items-center gap-1">
+                              <Smartphone size={11} className="text-[#E63946]" /> Scan with Any UPI App
+                            </span>
+                          </div>
+
+                          {/* Official UPI Details & 1-Click Apps */}
+                          <div className="sm:col-span-7 space-y-3">
+                            <div>
+                              <span className="block text-[10px] font-bold uppercase text-[#457B9D] mb-1 flex items-center justify-between">
+                                <span>Official Vendor UPI VPA</span>
+                                <span className="text-emerald-700 font-extrabold normal-case">Store: {vendorBusinessName}</span>
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 font-mono font-bold text-xs p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[#1D3557] select-all truncate">
+                                  {vendorUpiId}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleCopyUpi}
+                                  className="px-3 py-2.5 rounded-xl bg-[#1D3557] hover:bg-[#457B9D] text-white text-xs font-bold flex items-center gap-1.5 transition-colors flex-shrink-0"
+                                  title="Copy UPI ID"
+                                >
+                                  {copiedUpi ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                                  <span>{copiedUpi ? 'Copied' : 'Copy'}</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Direct App Launch Pills */}
+                            <div>
+                              <span className="block text-[10px] font-bold text-[#457B9D] uppercase mb-1.5">
+                                Instant App Payment
+                              </span>
+                              <div className="flex flex-wrap gap-1.5">
+                                <a
+                                  href={upiPayPayload}
+                                  className="px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] font-bold hover:bg-emerald-100 flex items-center gap-1"
+                                >
+                                  <span>Google Pay</span>
+                                </a>
+                                <a
+                                  href={upiPayPayload}
+                                  className="px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-800 text-[10px] font-bold hover:bg-indigo-100 flex items-center gap-1"
+                                >
+                                  <span>PhonePe</span>
+                                </a>
+                                <a
+                                  href={upiPayPayload}
+                                  className="px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-300 text-sky-800 text-[10px] font-bold hover:bg-sky-100 flex items-center gap-1"
+                                >
+                                  <span>Paytm / BHIM</span>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Section B: Customer UPI for Deposit Refund */}
+                      <div className="pt-3 border-t border-[#A8DADC]/40 space-y-3">
+                        <div className="space-y-1">
+                          <label className="block font-extrabold text-[#1D3557] text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                            <Wallet size={14} className="text-emerald-600" />
+                            Your UPI ID (For 100% Refundable Security Deposit Return)
+                          </label>
+                          <p className="text-[10px] text-[#457B9D]">
+                            Refundable security deposit of <strong>₹{deposit.toLocaleString('en-IN')}</strong> will be automatically credited back to this account upon equipment handover.
+                          </p>
+                        </div>
+                        <input
+                          type="text"
+                          value={customerRefundUpi}
+                          onChange={(e) => setCustomerRefundUpi(e.target.value)}
+                          placeholder="e.g. yourname@okhdfcbank"
+                          className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Section C: Optional UTR / Reference ID */}
+                      <div className="pt-2 border-t border-[#A8DADC]/40 space-y-1.5">
+                        <label className="block font-bold text-[#1D3557] text-[10px] uppercase">
+                          UPI Reference / UTR Number (Optional / Auto-Confirmed)
+                        </label>
+                        <input
+                          type="text"
+                          value={utrNumber}
+                          onChange={(e) => setUtrNumber(e.target.value)}
+                          placeholder="e.g. 425678912345 (12-digit UTR from payment receipt)"
+                          className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-medium text-[#1D3557] focus:outline-none"
+                        />
+                      </div>
+
                     </div>
                   )}
+
+                  {paymentMethod === 'card' && (
+                    <div className="bg-[#F1FAEE] p-4 rounded-2xl border border-[#A8DADC]/40 space-y-3 text-xs">
+                      <div className="space-y-1">
+                        <label className="block font-bold text-[#1D3557] text-[10px] uppercase">Card Number</label>
+                        <input type="text" placeholder="4532 •••• •••• 8892" className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-mono font-bold" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block font-bold text-[#1D3557] text-[10px] uppercase">Expiry (MM/YY)</label>
+                          <input type="text" placeholder="12/28" className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold" />
+                        </div>
+                        <div>
+                          <label className="block font-bold text-[#1D3557] text-[10px] uppercase">CVV</label>
+                          <input type="password" placeholder="•••" maxLength={3} className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'netbanking' && (
+                    <div className="bg-[#F1FAEE] p-4 rounded-2xl border border-[#A8DADC]/40 space-y-2 text-xs">
+                      <label className="block font-bold text-[#1D3557] text-[10px] uppercase">Select Bank</label>
+                      <select className="w-full p-2.5 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557]">
+                        <option>HDFC Bank</option>
+                        <option>ICICI Bank</option>
+                        <option>State Bank of India (SBI)</option>
+                        <option>Axis Bank</option>
+                        <option>Kotak Mahindra Bank</option>
+                      </select>
+                    </div>
+                  )}
+
                 </div>
               )}
 
@@ -367,7 +595,7 @@ export default function Checkout() {
               
               <div className="text-base font-bold text-[#1D3557] font-['Sora'] pb-3 border-b border-gray-100 flex items-center justify-between">
                 <span>Order Summary</span>
-                <span className="text-xs font-semibold text-[#E63946]">{bookingDraft.durationCount} Days</span>
+                <span className="text-xs font-semibold text-[#E63946]">{bookingDraft.durationCount || 2} Days</span>
               </div>
 
               {/* Product Card Mini */}
@@ -433,14 +661,14 @@ export default function Checkout() {
                 <div className="pt-3 border-t border-gray-200 flex items-baseline justify-between">
                   <div>
                     <span className="text-xs font-extrabold uppercase tracking-wider text-[#457B9D] block">
-                      Total Payable
+                      Payable Now
                     </span>
                     <span className="text-[10px] text-gray-500">
-                      {paymentPlan === 'deposit_only' ? 'Pay deposit now' : paymentPlan === 'pay_on_delivery' ? 'Pay on doorstep delivery' : 'Includes 100% refundable deposit'}
+                      {paymentPlan === 'deposit_only' ? 'Deposit to reserve slot' : paymentPlan === 'pay_on_delivery' ? 'Pay on doorstep delivery' : 'Full rental + refundable deposit'}
                     </span>
                   </div>
                   <div className="text-2xl font-extrabold text-[#1D3557] font-['Sora']">
-                    ₹{(paymentPlan === 'deposit_only' ? deposit : paymentPlan === 'pay_on_delivery' ? finalTotal : finalTotal).toLocaleString('en-IN')}
+                    ₹{payableNow.toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
@@ -456,7 +684,7 @@ export default function Checkout() {
                 ) : (
                   <>
                     <Lock size={16} />
-                    <span>Pay & Confirm Rental Order</span>
+                    <span>Pay ₹{payableNow.toLocaleString('en-IN')} & Confirm Order</span>
                   </>
                 )}
               </button>

@@ -1,24 +1,64 @@
 .document-modal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 50;
-  background-color: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  z-index: 9999;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.25rem;
+  overflow-y: auto;
 }
 
 .document-sheet {
   background-color: #ffffff;
   border-radius: 1.5rem;
   width: 100%;
-  max-width: 48rem;
+  max-width: 52rem;
   max-height: 90vh;
   overflow-y: auto;
-  border: 1px solid rgba(168, 218, 220, 0.5);
-  box-shadow: 0 25px 50px -12px rgba(29, 53, 87, 0.25);
-  padding: 2.5rem;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  padding: 2.25rem;
   position: relative;
 }
+
+/* Print Specific Rules for perfect physical A4 / PDF generation */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .document-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .document-sheet,
+  .document-sheet * {
+    visibility: visible;
+  }
+  
+  .document-sheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+

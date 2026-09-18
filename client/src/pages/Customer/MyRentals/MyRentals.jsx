@@ -40,57 +40,58 @@ export default function MyRentals() {
 
   useEffect(() => {
     const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+
     if (token) {
       fetch('/api/v1/bookings/my', {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then((res) => res.json())
         .then((resData) => {
-          if (resData.success && Array.isArray(resData.data)) {
-            if (resData.data.length > 0) {
-              const mapped = resData.data.map((b) => ({
-                id: b.id,
-                orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
-                title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Equipment',
-                category: 'Cameras & Photography',
-                image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || FEATURED_PRODUCTS[0].images[0]) : FEATURED_PRODUCTS[0].images[0],
-                vendor: {
-                  id: b.vendorId,
-                  name: b.vendor ? b.vendor.businessName : 'Rentora Store',
-                  city: b.vendor ? b.vendor.city : 'Ahmedabad',
-                  phone: b.vendor ? b.vendor.businessPhone : '+91 98250 12345',
-                  address: b.vendor ? b.vendor.businessAddress : 'Ahmedabad'
-                },
-                startDate: b.startDate,
-                endDate: b.endDate,
-                durationDays: b.totalRentalDays || 2,
-                pickupTime: '10:00 AM',
-                returnTime: '06:00 PM',
-                handoverType: b.deliveryType === 'doorstep' ? 'Express Doorstep Delivery' : 'Store Self-Pickup',
-                rentalAmount: Number(b.rentalSubtotal || 0),
-                securityDeposit: Number(b.securityDeposit || 0),
-                deliveryFee: Number(b.deliveryFee || 0),
-                discount: Number(b.discountAmount || 0),
-                totalPaid: Number(b.totalPayable || 0),
-                paymentStatus: b.paymentStatus || 'Pending',
-                rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : b.status,
-                daysRemaining: 2,
-                currentStep: 2,
-                inspectionNote: 'Sanitized & calibrated before dispatch. Sealed in Pelican hard case.',
-                rawBooking: b
-              }));
-              setRentals(mapped);
-            } else {
-              setRentals([]);
-            }
+          let list = [];
+          if (resData.success) {
+            list = resData.data?.results || resData.data?.rows || (Array.isArray(resData.data) ? resData.data : []);
           }
+
+          const mapped = list.map((b) => ({
+            id: b.id,
+            orderId: b.bookingNumber || b.id?.slice(0, 8).toUpperCase(),
+            title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Equipment',
+            category: 'Cameras & Photography',
+            image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80') : 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
+            vendor: {
+              id: b.vendorId,
+              name: b.vendor ? b.vendor.businessName : 'PixelCraft Rentals',
+              city: b.vendor ? b.vendor.city : 'Ahmedabad',
+              phone: b.vendor ? b.vendor.businessPhone : '+91 98250 12345',
+              address: b.vendor ? b.vendor.businessAddress : 'Ahmedabad'
+            },
+            startDate: b.startDate,
+            endDate: b.endDate,
+            durationDays: b.totalRentalDays || 2,
+            pickupTime: '10:00 AM',
+            returnTime: '06:00 PM',
+            handoverType: b.deliveryType === 'doorstep' ? 'Express Doorstep Delivery' : 'Store Self-Pickup',
+            rentalAmount: Number(b.rentalSubtotal || b.rentalAmount || 0),
+            securityDeposit: Number(b.securityDeposit || b.depositAmount || 0),
+            deliveryFee: Number(b.deliveryFee || 0),
+            discount: Number(b.discountAmount || 0),
+            totalPaid: Number(b.totalPayable || b.totalAmount || 0),
+            paymentStatus: b.paymentStatus || 'Paid',
+            rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : (b.status || 'Active'),
+            daysRemaining: 2,
+            currentStep: 1,
+            inspectionNote: 'Sanitized & calibrated before dispatch. Sealed in Pelican hard case.',
+            rawBooking: b
+          }));
+          setRentals(mapped);
+          setHasLoaded(true);
         })
         .catch(() => {
-          setRentals(CUSTOMER_RENTALS);
-        })
-        .finally(() => setHasLoaded(true));
+          setRentals([]);
+          setHasLoaded(true);
+        });
     } else {
-      setRentals(CUSTOMER_RENTALS);
+      setRentals([]);
       setHasLoaded(true);
     }
   }, [user]);

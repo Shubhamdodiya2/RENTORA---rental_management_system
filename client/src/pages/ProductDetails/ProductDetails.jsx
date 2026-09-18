@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Star, 
@@ -18,38 +18,199 @@ import {
   Sparkles,
   Info,
   CheckCircle2,
-  FileText
+  FileText,
+  AlertCircle,
+  Loader2,
+  Lock
 } from 'lucide-react';
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import ProductImageGallery from '../../components/ProductImageGallery/ProductImageGallery';
 import AvailabilityCalendar from '../../components/AvailabilityCalendar/AvailabilityCalendar';
-import { FEATURED_PRODUCTS } from '../../data/mockData';
 import { useBooking } from '../../context/BookingContext';
+import { useAuth } from '../../context/AuthContext';
+import { useWishlist } from '../../context/WishlistContext';
+import api from '../../services/api';
 import './ProductDetails.css';
+
+function formatApiProduct(p) {
+  let primaryImg = p.primaryImage || (p.images && p.images[0]?.imageUrl) || (Array.isArray(p.images) && typeof p.images[0] === 'string' ? p.images[0] : null);
+  if (!primaryImg || typeof primaryImg !== 'string' || primaryImg.includes('unsplash.com/photos/')) {
+    primaryImg = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+  }
+
+  const imgList = (p.images && p.images.length > 0)
+    ? p.images.map(i => {
+        const u = typeof i === 'string' ? i : i?.imageUrl;
+        if (!u || typeof u !== 'string' || u.includes('unsplash.com/photos/')) {
+          return 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+        }
+        return u;
+      }).filter(Boolean)
+    : [primaryImg];
+
+  // Parse specifications into { label, value } array
+  let specsArray = [];
+  if (Array.isArray(p.specifications) && p.specifications.length > 0) {
+    specsArray = p.specifications.map((s) => ({
+      label: s.specKey || s.label || s.key || 'Specification',
+      value: s.specValue || s.value || '-'
+    }));
+  } else if (typeof p.specifications === 'object' && p.specifications !== null) {
+    specsArray = Object.entries(p.specifications).map(([k, v]) => ({
+      label: k,
+      value: String(v)
+    }));
+  }
+
+  if (specsArray.length === 0) {
+    specsArray = [
+      { label: 'Manufacturer / Brand', value: p.brand || 'Rentora Verified' },
+      { label: 'Rental Category', value: p.category?.name || 'Equipment' },
+      { label: 'Condition State', value: 'Sanitized & 100% Tested' },
+      { label: 'Damage Protection', value: 'Comprehensive Insurance Covered' }
+    ];
+  }
+
+  return {
+    id: p.id,
+    slug: p.slug || p.id,
+    title: p.name || p.title,
+    category: p.category?.name || p.category || 'Equipment',
+    categorySlug: p.category?.slug || p.categorySlug || p.categoryId || 'cameras',
+    pricePerDay: Number(p.pricePerDay || 0),
+    pricePerHour: Number(p.pricePerHour || Math.round((p.pricePerDay || 0) / 8) || 99),
+    pricePerWeek: Number(p.pricePerWeek || (p.pricePerDay || 0) * 5 || 4500),
+    pricePerMonth: Number(p.pricePerMonth || (p.pricePerDay || 0) * 18 || 15000),
+    deposit: Number(p.securityDeposit || p.deposit || 0),
+    rating: p.rating ? Number(p.rating) : 5.0,
+    reviews: p.reviewsCount || p.reviews || 0,
+    instantBooking: true,
+    images: imgList.length > 0 ? imgList : [primaryImg],
+    vendor: {
+      id: p.vendor?.id || p.vendorId || 'vnd-1',
+      userId: p.vendor?.userId || p.vendor?.user_id,
+      name: p.vendor?.businessName || p.vendor?.name || 'Rentora Verified Store',
+      city: p.vendor?.city || 'Ahmedabad',
+      phone: p.vendor?.businessPhone || '+91 98250 12345',
+      address: p.vendor?.businessAddress || 'Ahmedabad Hub',
+      logo: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=100&q=80',
+      badge: 'Verified Super Vendor',
+      responseRate: '98%',
+      rating: 4.9
+    },
+    condition: 'Sanitized & Tested',
+    features: Array.isArray(p.tags) && p.tags.length > 0
+      ? p.tags
+      : ['Verified Stock', 'Same-Day Handover', 'Damage Covered', 'Escrow Protected'],
+    fullDescription: p.description || 'Professional rental equipment tested and prepared for seamless deployment.',
+    description: p.description || 'Professional rental equipment tested and prepared for seamless deployment.',
+    specifications: specsArray,
+    includedItems: Array.isArray(p.tags) && p.tags.length > 0
+      ? p.tags
+      : ['Main Unit & Accessories', 'Protective Carry Bag', 'Certified Power/Charging Cable'],
+    terms: 'Valid Government ID required at handover. Security deposit refunded to original payment method within 2 hours of return.'
+  };
+}
 
 export default function ProductDetails() {
   const { productId } = useParams();
   const navigate = useNavigate();
   const { updateBookingDraft } = useBooking();
+  const { user, vendorProfile } = useAuth();
 
-  // Find product by id or fallback to first product
-  const product = FEATURED_PRODUCTS.find(p => p.id === productId) || FEATURED_PRODUCTS[0];
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [durationMode, setDurationMode] = useState('day'); // 'hour' | 'day' | 'week' | 'month' | 'year'
+  const [allProducts, setAllProducts] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    setError(null);
+
+    // Fetch primary product details
+    api.get(`/products/${productId}`)
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.data?.success && res.data.data) {
+          setProduct(formatApiProduct(res.data.data));
+        } else {
+          setError('Product listing not found.');
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setError('Product listing not found or is currently unavailable.');
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    // Fetch live catalog for dynamic similar products
+    api.get('/products')
+      .then((res) => {
+        if (!isMounted) return;
+        const rawList = res.data?.data?.products || res.data?.data?.results || (Array.isArray(res.data?.data) ? res.data.data : []);
+        if (Array.isArray(rawList)) {
+          setAllProducts(rawList.map(formatApiProduct));
+        }
+      })
+      .catch((err) => console.warn('[ProductDetails] Similar products fetch:', err.message));
+
+    return () => { isMounted = false; };
+  }, [productId]);
+
+  const { isInWishlist, toggleWishlist } = useWishlist();
+  const [durationMode, setDurationMode] = useState('day'); // 'hour' | 'day' | 'week' | 'month'
   const [quantity, setQuantity] = useState(1);
   const [startDate, setStartDate] = useState('2026-09-18');
   const [endDate, setEndDate] = useState('2026-09-20');
   const [durationDays, setDurationDays] = useState(2);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'specs' | 'terms' | 'vendor'
+  const isWishlisted = product ? isInWishlist(product.id) : false;
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'specs' | 'included' | 'terms'
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <Loader2 size={40} className="animate-spin text-[#E63946]" />
+        <h3 className="text-lg font-bold text-[#1D3557] font-['Sora']">Loading Equipment Details...</h3>
+        <p className="text-xs text-[#457B9D]">Fetching verified pricing, specifications, and live calendar availability.</p>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="max-w-3xl mx-auto my-16 px-4 text-center space-y-5">
+        <div className="w-20 h-20 rounded-3xl bg-red-50 text-[#E63946] flex items-center justify-center mx-auto shadow-sm">
+          <AlertCircle size={40} />
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-extrabold text-[#1D3557] font-['Sora']">
+          Product Listing Not Available
+        </h2>
+        <p className="text-sm text-[#457B9D] max-w-md mx-auto">
+          The rental equipment you are looking for is either inactive, pending vendor review, or has been relocated.
+        </p>
+        <div className="pt-2">
+          <Link
+            to="/products"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-[#E63946] hover:bg-[#D62839] text-white font-bold text-xs shadow-lg transition-all"
+          >
+            <span>Explore All 2,400+ Rentals</span>
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Pricing calculation
   const getRate = () => {
     switch (durationMode) {
-      case 'hour': return product.pricePerHour || Math.round(product.pricePerDay / 8);
-      case 'week': return product.pricePerWeek || (product.pricePerDay * 5);
-      case 'month': return product.pricePerMonth || (product.pricePerDay * 18);
-      case 'year': return product.pricePerYear || (product.pricePerMonth * 10);
+      case 'hour': return product.pricePerHour || Math.round((product.pricePerDay || 0) / 8);
+      case 'week': return product.pricePerWeek || ((product.pricePerDay || 0) * 5);
+      case 'month': return product.pricePerMonth || ((product.pricePerDay || 0) * 18);
       case 'day':
       default: return product.pricePerDay;
     }
@@ -58,8 +219,26 @@ export default function ProductDetails() {
   const currentRate = getRate();
   const durationMultiplier = durationMode === 'day' ? durationDays : durationMode === 'hour' ? 4 : 1;
   const rentalSubtotal = currentRate * durationMultiplier * quantity;
-  const depositTotal = product.deposit * quantity;
+  const depositTotal = (product.deposit || 0) * quantity;
   const estimatedTotal = rentalSubtotal + depositTotal;
+
+  const handleStartDateChange = (val) => {
+    setStartDate(val);
+    if (!endDate || endDate < val) {
+      setEndDate(val);
+      setDurationDays(1);
+    } else {
+      const count = Math.max(1, Math.round((new Date(`${endDate}T00:00:00`) - new Date(`${val}T00:00:00`)) / (1000 * 60 * 60 * 24)) + 1);
+      setDurationDays(count);
+    }
+  };
+
+  const handleEndDateChange = (val) => {
+    const finalEnd = val < startDate ? startDate : val;
+    setEndDate(finalEnd);
+    const count = Math.max(1, Math.round((new Date(`${finalEnd}T00:00:00`) - new Date(`${startDate}T00:00:00`)) / (1000 * 60 * 60 * 24)) + 1);
+    setDurationDays(count);
+  };
 
   const handleDatesFromCalendar = ({ start, end, count }) => {
     if (start) setStartDate(start);
@@ -67,7 +246,16 @@ export default function ProductDetails() {
     if (count) setDurationDays(count);
   };
 
+  const isOwnerVendor = Boolean(
+    (user && product?.vendor?.userId && user.id === product.vendor.userId) ||
+    (vendorProfile && product?.vendor?.id && vendorProfile.id === product.vendor.id)
+  );
+
   const handleRentNow = () => {
+    if (isOwnerVendor) {
+      alert("You are the vendor for this product. Vendors cannot rent their own listings. Please use a customer account to rent products.");
+      return;
+    }
     updateBookingDraft({
       product,
       durationMode,
@@ -79,8 +267,14 @@ export default function ProductDetails() {
     navigate('/booking');
   };
 
-  // Related products from same category
-  const relatedProducts = FEATURED_PRODUCTS.filter(p => p.id !== product.id && p.categorySlug === product.categorySlug).slice(0, 3);
+  // Dynamic Related products from real catalog
+  const sameCategoryProducts = allProducts.filter(
+    (p) => p.id !== product?.id && (p.categorySlug === product?.categorySlug || p.category === product?.category)
+  );
+  // Show up to 3 real products in same category (or other real listings if category has only 1)
+  const relatedProducts = sameCategoryProducts.length > 0
+    ? sameCategoryProducts.slice(0, 3)
+    : allProducts.filter((p) => p.id !== product?.id).slice(0, 3);
 
   return (
     <div className="product-details-page">
@@ -121,7 +315,7 @@ export default function ProductDetails() {
                     <span>Share</span>
                   </button>
                   <button 
-                    onClick={() => setIsWishlisted(!isWishlisted)}
+                    onClick={() => toggleWishlist(product)}
                     className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1 transition-all ${
                       isWishlisted ? 'bg-[#E63946] text-white border-[#E63946]' : 'bg-[#F1FAEE] text-[#1D3557] border-[#A8DADC]/40'
                     }`}
@@ -140,7 +334,15 @@ export default function ProductDetails() {
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full overflow-hidden border border-[#A8DADC]">
-                    <img src={product.vendor.logo} alt={product.vendor.name} className="w-full h-full object-cover" />
+                    <img
+                      src={product.vendor.logo}
+                      alt={product.vendor.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=100&q=80';
+                      }}
+                    />
                   </div>
                   <div>
                     <span className="font-bold text-[#1D3557] flex items-center gap-1">
@@ -213,7 +415,7 @@ export default function ProductDetails() {
               {activeTab === 'specs' && (
                 <div className="divide-y divide-gray-100">
                   {product.specifications.map((spec, i) => (
-                    <div key={i} className="spec-table-row">
+                    <div key={i} className="spec-table-row flex justify-between py-2 text-xs">
                       <span className="font-semibold text-[#457B9D]">{spec.label}</span>
                       <span className="font-bold text-[#1D3557] text-right">{spec.value}</span>
                     </div>
@@ -270,7 +472,13 @@ export default function ProductDetails() {
                 </p>
               </div>
 
-              <AvailabilityCalendar onDatesChange={handleDatesFromCalendar} />
+              <AvailabilityCalendar
+                productId={product.id}
+                selectedStart={startDate}
+                selectedEnd={endDate}
+                quantity={quantity}
+                onDatesChange={handleDatesFromCalendar}
+              />
             </div>
 
             {/* Vendor Profile Storefront Box */}
@@ -280,6 +488,10 @@ export default function ProductDetails() {
                   src={product.vendor.logo}
                   alt={product.vendor.name}
                   className="w-16 h-16 rounded-2xl object-cover border-2 border-[#A8DADC]"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=100&q=80';
+                  }}
                 />
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] text-[10px] font-bold uppercase">
@@ -355,8 +567,8 @@ export default function ProductDetails() {
                     <input
                       type="date"
                       value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full p-2 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none"
+                      onChange={(e) => handleStartDateChange(e.target.value)}
+                      className="w-full p-2 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none focus:ring-1 focus:ring-[#E63946]"
                     />
                   </div>
 
@@ -367,8 +579,9 @@ export default function ProductDetails() {
                     <input
                       type="date"
                       value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full p-2 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none"
+                      min={startDate}
+                      onChange={(e) => handleEndDateChange(e.target.value)}
+                      className="w-full p-2 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none focus:ring-1 focus:ring-[#E63946]"
                     />
                   </div>
                 </div>
@@ -433,13 +646,43 @@ export default function ProductDetails() {
 
               {/* Action Buttons */}
               <div className="space-y-2.5">
-                <button
-                  onClick={handleRentNow}
-                  className="w-full py-4 rounded-2xl bg-[#E63946] hover:bg-[#D62839] text-white font-extrabold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
-                >
-                  <span>Rent Now • Reserve Instantly</span>
-                  <ArrowRight size={16} />
-                </button>
+                {isOwnerVendor ? (
+                  <div className="space-y-3">
+                    <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-xs">
+                        <AlertCircle size={16} className="text-amber-600 flex-shrink-0" />
+                        <span>Vendor Listing Owner Notice</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-amber-800 font-medium">
+                        You are the owner of this equipment. Vendors cannot rent their own listings. Only customer accounts can place rental orders.
+                      </p>
+                    </div>
+
+                    <button
+                      disabled
+                      className="w-full py-4 rounded-2xl bg-slate-200 text-slate-500 font-extrabold text-xs cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <Lock size={15} />
+                      <span>Vendors Cannot Rent Own Listing</span>
+                    </button>
+
+                    <Link
+                      to="/vendor/products"
+                      className="w-full py-3 rounded-2xl bg-[#1D3557] hover:bg-[#457B9D] text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md text-center"
+                    >
+                      <Store size={14} />
+                      <span>Manage Listing in Vendor Hub</span>
+                    </Link>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleRentNow}
+                    className="w-full py-4 rounded-2xl bg-[#E63946] hover:bg-[#D62839] text-white font-extrabold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 cursor-pointer"
+                  >
+                    <span>Rent Now • Reserve Instantly</span>
+                    <ArrowRight size={16} />
+                  </button>
+                )}
 
                 <div className="grid grid-cols-3 gap-2 text-[10px] text-center text-[#457B9D] pt-2">
                   <div className="p-2 bg-[#F1FAEE] rounded-xl font-medium">
@@ -487,14 +730,22 @@ export default function ProductDetails() {
                   className="bg-white rounded-3xl p-4 border border-[#A8DADC]/40 card-shadow card-shadow-hover cursor-pointer space-y-3"
                 >
                   <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100 relative">
-                    <img src={rel.images[0]} alt={rel.title} className="w-full h-full object-cover" />
+                    <img
+                      src={rel.images[0]}
+                      alt={rel.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+                      }}
+                    />
                     <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-[#1D3557]/80 text-white text-[10px] font-bold">
                       ₹{rel.pricePerDay} / day
                     </span>
                   </div>
                   <h4 className="font-bold text-sm text-[#1D3557] line-clamp-1">{rel.title}</h4>
                   <div className="text-xs text-[#457B9D] flex items-center justify-between">
-                    <span>{rel.vendor.name}</span>
+                    <span>{rel.vendor?.name || 'Rentora Vendor'}</span>
                     <span className="font-bold text-[#E63946] flex items-center gap-0.5">
                       <Star size={12} fill="currentColor" /> {rel.rating}
                     </span>

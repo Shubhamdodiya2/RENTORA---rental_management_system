@@ -120,6 +120,18 @@ export default function CategoryManager() {
     });
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredCategories = categories.filter((cat) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      cat.name.toLowerCase().includes(q) ||
+      cat.slug.toLowerCase().includes(q) ||
+      (cat.subcategories && cat.subcategories.some(s => s.toLowerCase().includes(q)))
+    );
+  });
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       
@@ -132,18 +144,27 @@ export default function CategoryManager() {
           </p>
         </div>
 
-        <button
-          onClick={handleOpenCreate}
-          className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors self-start sm:self-auto"
-        >
-          <Plus size={16} />
-          <span>Add New Category</span>
-        </button>
+        <div className="flex items-center gap-3">
+          <input
+            type="text"
+            placeholder="Search categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 shadow-xs w-48 sm:w-60"
+          />
+          <button
+            onClick={handleOpenCreate}
+            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-colors self-start sm:self-auto whitespace-nowrap"
+          >
+            <Plus size={16} />
+            <span>Add Category</span>
+          </button>
+        </div>
       </div>
 
       {/* Category Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((cat) => {
+        {filteredCategories.map((cat) => {
           const IconComponent = iconMap[cat.iconName] || Camera;
           return (
             <div

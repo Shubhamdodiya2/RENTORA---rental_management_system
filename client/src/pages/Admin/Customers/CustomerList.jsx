@@ -53,11 +53,13 @@ export default function CustomerList() {
   const filteredCustomers = useMemo(() => {
     return customers
       .filter((c) => {
+        const q = searchQuery.toLowerCase();
         const matchesSearch =
-          c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          c.phone.includes(searchQuery) ||
-          c.city.toLowerCase().includes(searchQuery.toLowerCase());
+          !searchQuery.trim() ||
+          (c.name && c.name.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q)) ||
+          (c.phone && c.phone.includes(q)) ||
+          (c.city && c.city.toLowerCase().includes(q));
 
         const matchesStatus = statusFilter === 'all' || c.accountStatus === statusFilter;
         const matchesKyc = kycFilter === 'all' || c.kycStatus === kycFilter;
@@ -65,10 +67,10 @@ export default function CustomerList() {
         return matchesSearch && matchesStatus && matchesKyc;
       })
       .sort((a, b) => {
-        if (sortBy === 'spending') return b.totalSpending - a.totalSpending;
-        if (sortBy === 'orders') return b.totalOrders - a.totalOrders;
-        if (sortBy === 'name') return a.name.localeCompare(b.name);
-        return new Date(b.registrationDate) - new Date(a.registrationDate);
+        if (sortBy === 'spending') return (b.totalSpent || b.totalSpending || 0) - (a.totalSpent || a.totalSpending || 0);
+        if (sortBy === 'orders') return (b.totalRentals || b.totalOrders || 0) - (a.totalRentals || a.totalOrders || 0);
+        if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
+        return new Date(b.registrationDate || b.joinedDate || 0) - new Date(a.registrationDate || a.joinedDate || 0);
       });
   }, [customers, searchQuery, statusFilter, kycFilter, sortBy]);
 
@@ -358,10 +360,10 @@ export default function CustomerList() {
                       {/* Orders & Spending */}
                       <td className="py-3.5 px-4">
                         <div className="font-extrabold text-slate-900 font-['Sora'] text-xs">
-                          ₹{customer.totalSpending.toLocaleString('en-IN')}
+                          ₹{(Number(customer.totalSpending ?? customer.totalSpent ?? 0)).toLocaleString('en-IN')}
                         </div>
                         <span className="text-[11px] text-slate-500 font-medium">
-                          {customer.totalOrders} bookings
+                          {customer.totalRentals || customer.totalOrders || 0} bookings
                         </span>
                       </td>
 

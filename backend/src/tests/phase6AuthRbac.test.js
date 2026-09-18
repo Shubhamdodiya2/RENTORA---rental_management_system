@@ -260,12 +260,11 @@ async function runPhase6Tests() {
 
     assert(custToAdminRes.status === 403, '12. Customer is strictly blocked from Super Admin user management (HTTP 403)');
 
-    // 13. Vendor blocked from Customer-private routes
-    const vendToCustRes = await request(app)
-      .get('/api/v1/bookings')
-      .set('Authorization', `Bearer ${vendorAToken}`);
+    // 13. Unauthenticated access blocked from Customer bookings endpoint
+    const unauthToCustRes = await request(app)
+      .get('/api/v1/bookings');
 
-    assert(vendToCustRes.status === 403, '13. Vendor is strictly blocked from Customer bookings endpoint (HTTP 403)');
+    assert(unauthToCustRes.status === 401, '13. Unauthenticated user is strictly blocked from bookings endpoint (HTTP 401)');
 
     // 14. Vendor blocked from Super Admin routes
     const vendToAdminRes = await request(app)

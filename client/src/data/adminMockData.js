@@ -21,7 +21,7 @@ export const ADMIN_CUSTOMERS = [
     phone: '+91 98251 12345',
     city: 'Ahmedabad',
     location: 'Satellite, Ahmedabad, Gujarat',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://ui-avatars.com/api/?name=Aarav+Patel&background=1D3557&color=ffffff&bold=true',
     totalOrders: 18,
     totalSpending: 84500,
     registrationDate: '12 Jan 2025',
@@ -106,7 +106,7 @@ export const ADMIN_CUSTOMERS = [
     phone: '+91 97129 99887',
     city: 'Gandhinagar',
     location: 'Infocity, Gandhinagar, Gujarat',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://ui-avatars.com/api/?name=Divya+Joshi&background=1D3557&color=ffffff&bold=true',
     totalOrders: 15,
     totalSpending: 67300,
     registrationDate: '02 Jun 2025',
@@ -960,7 +960,7 @@ export const ADMIN_USERS = [
     status: 'Active',
     lastLogin: 'Active Now',
     createdDate: '01 Jan 2024',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://ui-avatars.com/api/?name=Super+Admin&background=1D3557&color=ffffff&bold=true',
     permissions: ['all_access', 'vendor_approval', 'financial_payouts', 'system_settings', 'dispute_resolution']
   },
   {

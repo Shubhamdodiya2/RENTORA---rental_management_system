@@ -18,6 +18,15 @@ const BLOCKING_BOOKING_STATUSES = [
 
 class AvailabilityService {
   /**
+   * Helper: Add or subtract days to a YYYY-MM-DD date string
+   */
+  static addDays(dateStr, days) {
+    const d = new Date(`${dateStr}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split('T')[0];
+  }
+
+  /**
    * Helper: Generate an array of YYYY-MM-DD date strings between start and end (inclusive)
    */
   static getDateRangeArray(startDateStr, endDateStr) {
@@ -34,7 +43,7 @@ class AvailabilityService {
 
   /**
    * Calculate exact available stock for a product across a specific date window
-   * Inclusive on both startDate and endDate.
+   * Includes 1-day turnaround, inspection, and sanitization buffer after each rental end date.
    */
   static async checkAvailability(productId, startDateStr, endDateStr, requestedQty = 1, options = {}) {
     const transaction = options.transaction || null;
@@ -69,8 +78,8 @@ class AvailabilityService {
       };
     }
 
-    // 2. Fetch all overlapping active bookings for this product
-    // Overlap condition: booking.startDate <= queryEndDate AND booking.endDate >= queryStartDate
+    // 2. Fetch all overlapping active bookings for this product (considering 1-day post-rental buffer)
+    const bufferStartDate = this.addDays(startDateStr, -1);
     const overlappingItems = await BookingItem.findAll({
       where: { productId },
       include: [{
@@ -79,7 +88,7 @@ class AvailabilityService {
         where: {
           status: { [Op.in]: BLOCKING_BOOKING_STATUSES },
           startDate: { [Op.lte]: endDateStr },
-          endDate: { [Op.gte]: startDateStr }
+          endDate: { [Op.gte]: bufferStartDate }
         },
         attributes: ['id', 'startDate', 'endDate', 'status']
       }],
@@ -98,11 +107,11 @@ class AvailabilityService {
       if (!b) continue;
 
       const bStart = b.startDate;
-      const bEnd = b.endDate;
+      const bEndWithBuffer = this.addDays(b.endDate, 1); // 1-Day Turnaround / Inspection Buffer
       const qty = item.quantity || 1;
 
       for (const d of dateList) {
-        if (d >= bStart && d <= bEnd) {
+        if (d >= bStart && d <= bEndWithBuffer) {
           dayWiseBooked[d] += qty;
         }
       }

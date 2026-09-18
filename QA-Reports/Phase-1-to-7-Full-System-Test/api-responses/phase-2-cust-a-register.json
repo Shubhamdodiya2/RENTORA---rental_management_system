@@ -3,33 +3,33 @@
   "message": "Customer account registered successfully",
   "data": {
     "user": {
-      "id": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+      "id": "4fef6d94-71af-4dba-84f7-d894b5d727cf",
       "fullName": "Aarav Patel",
-      "email": "qa.cust.alpha.1789673414238@rentoratest.in",
+      "email": "qa.cust.alpha.1789759162389@rentoratest.in",
       "phone": "+91 98250 11001",
       "isActive": true,
       "isVerified": false,
       "mustChangePassword": false,
-      "updatedAt": "2026-09-17T19:30:15.377Z",
-      "createdAt": "2026-09-17T19:30:15.377Z"
+      "updatedAt": "2026-09-18T19:19:23.413Z",
+      "createdAt": "2026-09-18T19:19:23.413Z"
     },
     "roles": [
       "CUSTOMER"
     ],
     "customerProfile": {
-      "id": "190de930-c518-4531-845e-7cfeb79e89a4",
+      "id": "9136ba9e-8e6c-4d15-857a-f54a2c9fb838",
       "state": "Gujarat",
-      "userId": "8f1fea70-e111-4297-a5dd-7d89e20a276e",
+      "userId": "4fef6d94-71af-4dba-84f7-d894b5d727cf",
       "city": "Ahmedabad",
       "kycStatus": "Pending",
       "kycBadge": "Standard Member",
       "trustScore": 100,
-      "updatedAt": "2026-09-17T19:30:15.402Z",
-      "createdAt": "2026-09-17T19:30:15.402Z"
+      "updatedAt": "2026-09-18T19:19:23.433Z",
+      "createdAt": "2026-09-18T19:19:23.433Z"
     },
     "vendorProfile": null,
-    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjhmMWZlYTcwLWUxMTEtNDI5Ny1hNWRkLTdkODllMjBhMjc2ZSIsImVtYWlsIjoicWEuY3VzdC5hbHBoYS4xNzg5NjczNDE0MjM4QHJlbnRvcmF0ZXN0LmluIiwiZnVsbE5hbWUiOiJBYXJhdiBQYXRlbCIsInJvbGVzIjpbIkNVU1RPTUVSIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTY3MzQxNSwiZXhwIjoxNzg5Njc0MzE1fQ.ctapNFbwCTSap_SMPqhHuFEwrPgSi1ib3hw0Ba7JW8Q",
-    "refreshToken": "f2737b3e3887717c006ac44109d139ae91fd6e22ba134872131c99b0bde23252c47dba0d94a58871"
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjRmZWY2ZDk0LTcxYWYtNGRiYS04NGY3LWQ4OTRiNWQ3MjdjZiIsImVtYWlsIjoicWEuY3VzdC5hbHBoYS4xNzg5NzU5MTYyMzg5QHJlbnRvcmF0ZXN0LmluIiwiZnVsbE5hbWUiOiJBYXJhdiBQYXRlbCIsInJvbGVzIjpbIkNVU1RPTUVSIl0sIm11c3RDaGFuZ2VQYXNzd29yZCI6ZmFsc2UsImlhdCI6MTc4OTc1OTE2MywiZXhwIjoxNzg5NzYwMDYzfQ.TZ6vGKNm8NqNlN-2Z61E7IA8jdH9wb03NaWW60Kjafs",
+    "refreshToken": "8fbc387fb670ff71d488b46bd02d3944ed59d753200791dbba434ec4c50ff52c086110117b326479"
   },
   "errors": null
 }

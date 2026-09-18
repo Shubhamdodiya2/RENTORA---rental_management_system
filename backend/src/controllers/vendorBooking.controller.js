@@ -2,7 +2,7 @@
  * Vendor Booking & Fulfillment Controller
  */
 
-const { Booking, BookingItem, BookingStatusHistory, Product, User } = require('../models');
+const { Booking, BookingItem, BookingStatusHistory, Product, ProductImage, User } = require('../models');
 const BookingService = require('../services/booking.service');
 const ApiResponse = require('../utils/apiResponse');
 const { validateBookingTransition } = require('../validations/booking.validation');
@@ -28,12 +28,19 @@ class VendorBookingController {
           { 
             model: BookingItem, 
             as: 'items', 
-            include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'brand'] }] 
+            include: [
+              { 
+                model: Product, 
+                as: 'product', 
+                attributes: ['id', 'name', 'brand', 'sku'],
+                include: [{ model: ProductImage, as: 'images', attributes: ['imageUrl', 'isPrimary'] }]
+              }
+            ] 
           },
           { 
             model: User, 
             as: 'customer', 
-            attributes: ['id', 'fullName', 'email', 'phone'] 
+            attributes: ['id', 'fullName', 'email', 'phone', 'avatarUrl'] 
           }
         ],
         distinct: true,

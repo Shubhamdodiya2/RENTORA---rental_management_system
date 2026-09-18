@@ -11,14 +11,14 @@ import {
   Phone,
   MapPin,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  Package
 } from 'lucide-react';
-import { VENDOR_PICKUPS_RETURNS } from '../../../data/vendorMockData';
 import { useVendor } from '../../../context/VendorContext';
 import './VendorPickupReturns.css';
 
 export default function VendorPickupReturns() {
-  const { showToast } = useVendor();
+  const { orders, showToast } = useVendor();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [inspectionTarget, setInspectionTarget] = useState(null);
@@ -29,7 +29,32 @@ export default function VendorPickupReturns() {
     scratches: false
   });
 
-  const filteredLogs = VENDOR_PICKUPS_RETURNS.filter((item) => {
+  // Map live orders into pickup & return logistics items
+  const logisticsLogs = orders.map((o) => {
+    const isDone = o.orderStatus === 'Completed' || o.status === 'PRODUCT_RETURNED' || o.status === 'DEPOSIT_RELEASED';
+    const isReturnMode = o.orderStatus === 'Active' || o.status === 'RENTAL_ACTIVE' || o.status === 'RETURN_SCHEDULED' || isDone;
+
+    return {
+      id: `LOG-${(o.orderId || 'BKG').slice(0, 6)}`,
+      orderId: o.orderId,
+      rawOrder: o,
+      type: isReturnMode ? 'Return Inspection' : 'Customer Dispatch',
+      customer: o.customer?.name || 'Customer',
+      address: o.customer?.city || 'Ahmedabad',
+      product: o.product?.name || 'Rental Gear',
+      date: isReturnMode ? (o.endDate || 'Upcoming') : (o.startDate || 'Immediate'),
+      time: '11:00 AM',
+      mode: o.deliveryType === 'store_pickup' ? 'Store Counter Collection' : 'Express Courier Dispatch',
+      status: isDone ? 'Verified Return' : (o.orderStatus === 'Active' ? 'In Active Rental' : 'Scheduled Handover')
+    };
+  });
+
+  const scheduledPickups = orders.filter(o => o.orderStatus === 'Confirmed' || o.status === 'BOOKING_CONFIRMED' || o.status === 'PRODUCT_RESERVED').length;
+  const dispatchedCount = orders.filter(o => o.orderStatus === 'Processing' || o.orderStatus === 'Active' || o.status === 'PICKUP_SCHEDULED' || o.status === 'PRODUCT_HANDED_OVER').length;
+  const upcomingReturns = orders.filter(o => o.orderStatus === 'Active' || o.status === 'RENTAL_ACTIVE' || o.status === 'RETURN_SCHEDULED').length;
+  const verifiedReturns = orders.filter(o => o.orderStatus === 'Completed' || o.status === 'PRODUCT_RETURNED' || o.status === 'DEPOSIT_RELEASED').length;
+
+  const filteredLogs = logisticsLogs.filter((item) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -60,26 +85,26 @@ export default function VendorPickupReturns() {
       <div className="logistics-stats-grid">
         <div className="v-stat-card">
           <span className="v-stat-title">Scheduled Pickups</span>
-          <div className="v-stat-val text-navy">2</div>
+          <div className="v-stat-val text-navy">{scheduledPickups}</div>
           <span className="text-[11px] text-slate-500 font-medium">Staged for customer collection</span>
         </div>
 
         <div className="v-stat-card">
           <span className="v-stat-title">Dispatched Today</span>
-          <div className="v-stat-val text-secondary-blue">1</div>
+          <div className="v-stat-val text-secondary-blue">{dispatchedCount}</div>
           <span className="text-[11px] text-secondary-blue font-medium">Under courier transit</span>
         </div>
 
         <div className="v-stat-card">
           <span className="v-stat-title">Upcoming Returns</span>
-          <div className="v-stat-val text-amber-600">2</div>
-          <span className="text-[11px] text-amber-600 font-semibold">Due within 48 hours</span>
+          <div className="v-stat-val text-amber-600">{upcomingReturns}</div>
+          <span className="text-[11px] text-amber-600 font-semibold">Active customer rentals</span>
         </div>
 
         <div className="v-stat-card">
-          <span className="v-stat-title">Verified Returns (Sep)</span>
-          <div className="v-stat-val text-emerald-600">18</div>
-          <span className="text-[11px] text-emerald-600 font-semibold">100% Deposit Refunded</span>
+          <span className="v-stat-title">Completed Returns</span>
+          <div className="v-stat-val text-emerald-600">{verifiedReturns}</div>
+          <span className="text-[11px] text-emerald-600 font-semibold">Inspected & settled</span>
         </div>
       </div>
 
@@ -114,14 +139,21 @@ export default function VendorPickupReturns() {
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.map((item) => (
-                <tr key={item.id} className="v-table-row">
-                  <td>
-                    <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded">
-                      {item.orderId}
-                    </span>
-                    <div className="text-[10px] text-slate-400 mt-0.5">{item.id}</div>
+              {filteredLogs.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-12 text-slate-400">
+                    No pickup or return schedules currently logged for this store.
                   </td>
+                </tr>
+              ) : (
+                filteredLogs.map((item) => (
+                  <tr key={item.id} className="v-table-row">
+                    <td>
+                      <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded">
+                        {item.orderId}
+                      </span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{item.id}</div>
+                    </td>
                   <td>
                     <span className="font-semibold text-xs text-navy flex items-center gap-1.5">
                       {item.type.includes('Pickup') ? (
@@ -174,7 +206,7 @@ export default function VendorPickupReturns() {
                     </button>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>

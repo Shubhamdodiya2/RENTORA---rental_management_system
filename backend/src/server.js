@@ -2,6 +2,16 @@ const app = require('./app');
 const env = require('./config/env');
 const { sequelize } = require('./models');
 
+// Global Safety Net: Handle Uncaught Exceptions
+process.on('uncaughtException', (err) => {
+  console.error('[UNCAUGHT EXCEPTION]:', err.stack || err.message || err);
+});
+
+// Global Safety Net: Handle Unhandled Promise Rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[UNHANDLED REJECTION]:', reason?.stack || reason?.message || reason);
+});
+
 async function bootstrap() {
   try {
     console.log('[Rentora Backend] Initializing server...');

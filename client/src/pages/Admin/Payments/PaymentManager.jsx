@@ -39,23 +39,31 @@ export default function PaymentManager() {
   const [refundReason, setRefundReason] = useState('Deposit release on clean return');
 
   // Aggregated Financials
-  const totalRevenue = payments.reduce((acc, p) => acc + p.amount, 0);
-  const totalCommission = payments.reduce((acc, p) => acc + p.commission, 0);
-  const totalVendorPayouts = payments.reduce((acc, p) => acc + p.payoutAmount, 0);
-  const totalEscrowLocked = payments.filter((p) => p.escrowStatus === 'Locked').reduce((acc, p) => acc + (p.depositAmount || 0), 0);
+  const totalRevenue = payments.reduce((acc, p) => acc + (Number(p.amount ?? p.totalAmount ?? 0)), 0);
+  const totalCommission = payments.reduce((acc, p) => acc + (Number(p.commission ?? 0)), 0);
+  const totalVendorPayouts = payments.reduce((acc, p) => acc + (Number(p.payoutAmount ?? 0)), 0);
+  const totalEscrowLocked = payments.filter((p) => (p.escrowStatus || '').includes('Lock')).reduce((acc, p) => acc + (Number(p.depositAmount ?? p.escrowAmount ?? 0)), 0);
 
   // Filtered Payments
   const filteredPayments = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return payments.filter((p) => {
-      const matchesSearch =
-        p.transactionId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.orderId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.gatewayRef?.toLowerCase().includes(searchQuery.toLowerCase());
+      const txnId = (p.transactionId || p.id || '').toLowerCase();
+      const ordId = (p.orderId || p.orderNumber || '').toLowerCase();
+      const custName = (p.customer || p.customerName || '').toLowerCase();
+      const vendName = (p.vendor || p.vendorName || '').toLowerCase();
+      const gwRef = (p.gatewayRef || p.utrNumber || '').toLowerCase();
+
+      const matchesSearch = !q ||
+        txnId.includes(q) ||
+        ordId.includes(q) ||
+        custName.includes(q) ||
+        vendName.includes(q) ||
+        gwRef.includes(q);
 
       const matchesStatus = statusFilter === 'all' || p.status === statusFilter;
-      const matchesMethod = methodFilter === 'all' || p.paymentMethod.toLowerCase().includes(methodFilter.toLowerCase());
+      const methodStr = (p.paymentMethod || '').toLowerCase();
+      const matchesMethod = methodFilter === 'all' || methodStr.includes(methodFilter.toLowerCase());
 
       return matchesSearch && matchesStatus && matchesMethod;
     });
@@ -69,14 +77,14 @@ export default function PaymentManager() {
 
   const handleOpenRefund = (txn) => {
     setRefundingTxn(txn);
-    setRefundAmount(txn.amount.toString());
+    setRefundAmount((txn.amount ?? txn.totalAmount ?? 0).toString());
   };
 
   const handleConfirmRefund = (e) => {
     e.preventDefault();
     if (!refundingTxn || !refundAmount) return;
     const amt = parseFloat(refundAmount);
-    processRefund(refundingTxn.transactionId, amt, refundReason);
+    processRefund(refundingTxn.transactionId || refundingTxn.id, amt, refundReason);
     setRefundingTxn(null);
   };
 
@@ -199,41 +207,41 @@ export default function PaymentManager() {
                     
                     {/* Txn ID */}
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-slate-900 font-mono">{txn.transactionId}</div>
-                      <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{txn.gatewayRef}</span>
-                      <span className="text-[10px] text-slate-500">{txn.date}</span>
+                      <div className="font-semibold text-slate-900 font-mono">{txn.transactionId || txn.id}</div>
+                      <span className="text-[10px] text-slate-400 font-mono block mt-0.5">{txn.gatewayRef || txn.utrNumber || 'UPI_REF_2026'}</span>
+                      <span className="text-[10px] text-slate-500">{txn.date || txn.paymentDate || '18 Sept 2026'}</span>
                     </td>
 
                     {/* Order ID */}
                     <td className="py-4 px-4">
-                      <span className="font-semibold text-slate-900 font-mono">{txn.orderId}</span>
+                      <span className="font-semibold text-slate-900 font-mono">{txn.orderId || txn.orderNumber}</span>
                     </td>
 
                     {/* Customer & Vendor */}
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-slate-900">{txn.customer}</div>
-                      <span className="text-[11px] text-slate-500">Store: {txn.vendor}</span>
+                      <div className="font-semibold text-slate-900">{txn.customer || txn.customerName || 'Customer'}</div>
+                      <span className="text-[11px] text-slate-500">Store: {txn.vendor || txn.vendorName || 'Vendor Store'}</span>
                     </td>
 
                     {/* Gross / Comm */}
                     <td className="py-4 px-4">
                       <div className="font-bold text-slate-900 font-['Sora'] text-sm">
-                        ₹{txn.amount.toLocaleString('en-IN')}
+                        ₹{(Number(txn.amount ?? txn.totalAmount ?? 0)).toLocaleString('en-IN')}
                       </div>
                       <span className="text-[10px] text-slate-500 font-medium">
-                        Fee: ₹{txn.commission}
+                        Fee: ₹{(Number(txn.commission ?? 0)).toLocaleString('en-IN')}
                       </span>
                     </td>
 
                     {/* Method */}
                     <td className="py-4 px-4 font-medium text-slate-800">
-                      {txn.paymentMethod}
+                      {txn.paymentMethod || 'UPI (GPay / PhonePe)'}
                     </td>
 
                     {/* Escrow */}
                     <td className="py-4 px-4">
                       <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-medium border border-emerald-200/80">
-                        {txn.escrowStatus}
+                        {txn.escrowStatus || 'Locked in Escrow'}
                       </span>
                     </td>
 

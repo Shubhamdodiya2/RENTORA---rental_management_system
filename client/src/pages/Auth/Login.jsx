@@ -11,7 +11,8 @@ import {
   UserCheck,
   Store,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2
 } from 'lucide-react';
 import Logo from '../../components/Logo/Logo';
 import { useAuth } from '../../context/AuthContext';
@@ -22,13 +23,14 @@ export default function Login() {
   const location = useLocation();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(location.state?.registeredEmail || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState(location.state?.successMessage || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [role, setRole] = useState('customer'); // 'customer' | 'vendor' | 'admin'
+  const [role, setRole] = useState(location.state?.registeredRole || 'customer'); // 'customer' | 'vendor' | 'admin'
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -143,7 +145,7 @@ export default function Login() {
         <div className="grid grid-cols-3 gap-1.5 bg-[#F1FAEE] p-1 rounded-xl">
           <button
             type="button"
-            onClick={() => { setRole('customer'); setError(''); }}
+            onClick={() => { setRole('customer'); setEmail(''); setPassword(''); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'customer' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -153,7 +155,7 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => { setRole('vendor'); setError(''); }}
+            onClick={() => { setRole('vendor'); setEmail(''); setPassword(''); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'vendor' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -163,7 +165,7 @@ export default function Login() {
           </button>
           <button
             type="button"
-            onClick={() => { setRole('admin'); setError(''); }}
+            onClick={() => { setRole('admin'); setEmail(''); setPassword(''); setError(''); }}
             className={`py-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 ${
               role === 'admin' ? 'bg-[#1D3557] text-white shadow-sm' : 'text-[#457B9D]'
             }`}
@@ -172,6 +174,14 @@ export default function Login() {
             <span>Admin</span>
           </button>
         </div>
+
+        {/* Success Alert (e.g., from Registration) */}
+        {successMsg && !error && (
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-700 flex items-start gap-2 animate-in fade-in">
+            <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+            <span>{successMsg}</span>
+          </div>
+        )}
 
         {/* Error Alert */}
         {error && (
@@ -182,7 +192,7 @@ export default function Login() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
           
           {/* Email */}
           <div>
@@ -193,6 +203,7 @@ export default function Login() {
               <input
                 type="email"
                 required
+                autoComplete="off"
                 placeholder={role === 'admin' ? 'admin@rentora.in' : 'name@example.com'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -219,6 +230,7 @@ export default function Login() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="new-password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

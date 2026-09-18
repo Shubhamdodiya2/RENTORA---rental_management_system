@@ -48,6 +48,11 @@ const CustomerProfile = sequelize.define('CustomerProfile', {
   trustScore: {
     type: DataTypes.INTEGER,
     defaultValue: 100
+  },
+  refundUpi: {
+    type: DataTypes.STRING(150),
+    allowNull: true,
+    field: 'refund_upi'
   }
 }, {
   tableName: 'customer_profiles',

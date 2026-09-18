@@ -107,13 +107,27 @@ class InvoiceService {
       const vendor = booking.vendor;
 
       // 3. Build Immutable Snapshots
+      let parsedBookingNotes = {};
+      try {
+        if (booking.rentalNotes) parsedBookingNotes = typeof booking.rentalNotes === 'string' ? JSON.parse(booking.rentalNotes) : booking.rentalNotes;
+      } catch (e) {}
+
+      const customerRefundUpi = parsedBookingNotes.customerRefundUpi || (customer && customer.customerProfile ? customer.customerProfile.refundUpi : null) || (customer ? `${customer.email.split('@')[0]}@okaxis` : 'customer@okaxis');
+
+      const vendorMasked = vendor ? vendor.bankAccountMasked : null;
+      const vendorCleanName = vendor ? (vendor.businessName || 'vendor') : 'vendor';
+      const defaultVendorUpi = `${vendorCleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis`;
+      const vendorUpiId = vendorMasked?.upiId || defaultVendorUpi;
+      const vendorQrUrl = vendorMasked?.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(`upi://pay?pa=${vendorUpiId}&pn=${encodeURIComponent(vendorCleanName)}&cu=INR`)}&margin=4`;
+
       const customerSnapshot = {
         id: customer ? customer.id : booking.customerId,
         fullName: customer ? customer.fullName : 'Customer',
         email: customer ? customer.email : null,
         phone: customer ? customer.phone : null,
         billingAddress: booking.deliveryAddress || (customer && customer.customerProfile ? customer.customerProfile.address : null) || 'Address on file',
-        gstNumber: customer && customer.customerProfile ? customer.customerProfile.gstNumber : null
+        gstNumber: customer && customer.customerProfile ? customer.customerProfile.gstNumber : null,
+        refundUpi: customerRefundUpi
       };
 
       const vendorSnapshot = {
@@ -127,7 +141,9 @@ class InvoiceService {
         state: vendor ? vendor.state : 'Gujarat',
         pincode: '380001',
         gstNumber: vendor ? vendor.gstNumber : '24AAACR1234F1Z5',
-        panNumber: null
+        panNumber: null,
+        upiId: vendorUpiId,
+        qrCodeUrl: vendorQrUrl
       };
 
       const rentalDays = booking.durationCount || 1;
@@ -724,6 +740,10 @@ class InvoiceService {
     const items = invoice.itemsSnapshot || [];
     const isPaid = invoice.status === 'PAID' || invoice.paymentStatus === 'Success';
 
+    const vendorUpi = vendor.upiId || (vendor.storeName ? `${vendor.storeName.toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis` : 'vendor.escrow@okaxis');
+    const vendorQr = vendor.qrCodeUrl || `https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(`upi://pay?pa=${vendorUpi}&pn=${encodeURIComponent(vendor.storeName || 'Vendor')}&am=${invoice.totalAmount}&cu=INR`)}&margin=2`;
+    const customerRefundUpi = customer.refundUpi || (customer.email ? `${customer.email.split('@')[0]}@okaxis` : 'customer@okaxis');
+
     const formatCurrency = (val) => `₹${Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const itemsRowsHtml = items.map((item, idx) => `
@@ -904,8 +924,11 @@ class InvoiceService {
         <div style="font-size: 11px; color: #7E22CE; line-height: 1.4;">
           * Held safely in Rentora Escrow. Refunded back to customer post-inspection upon equipment return without damage deductions.
         </div>
+        <div style="margin-top: 10px; padding: 8px 10px; background: #FFFFFF; border-radius: 6px; border: 1px solid #E9D5FF; font-size: 11px; color: #581C87;">
+          <strong>Customer Deposit Refund UPI:</strong> <span style="font-family: monospace; font-weight: 700; color: #6B21A8;">${customerRefundUpi}</span>
+        </div>
         ${invoice.paymentReference ? `
-        <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #D8B4FE; font-size: 12px; color: #581C87;">
+        <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #D8B4FE; font-size: 11px; color: #581C87;">
           <strong>Bank Reference / UTR:</strong> ${invoice.paymentReference}<br>
           ${invoice.paymentVerificationDate ? `<strong>Verified On:</strong> ${new Date(invoice.paymentVerificationDate).toLocaleString('en-IN')}` : ''}
         </div>
@@ -957,6 +980,23 @@ class InvoiceService {
           <span>Total Payable:</span>
           <span>${formatCurrency(invoice.totalAmount)}</span>
         </div>
+      </div>
+    </div>
+
+    <!-- Vendor Settlement & UPI Payment Verification Card -->
+    <div style="background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <img src="${vendorQr}" alt="Vendor UPI QR" style="width: 72px; height: 72px; border-radius: 6px; border: 1px solid #86EFAC; background: #FFFFFF; padding: 2px;" />
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">Official Vendor Payment & Settlement VPA</div>
+          <div style="font-size: 13px; font-family: monospace; font-weight: 700; color: #14532D; margin-top: 2px;">${vendorUpi}</div>
+          <div style="font-size: 11px; color: #15803D; margin-top: 2px;">Merchant: <strong>${vendor.storeName || 'Registered Store'}</strong> | Rentora Verified Escrow Payout</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <span style="display: inline-block; padding: 4px 10px; background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 20px; font-size: 11px; font-weight: 700; color: #15803D;">
+          100% Escrow Verified
+        </span>
       </div>
     </div>
 

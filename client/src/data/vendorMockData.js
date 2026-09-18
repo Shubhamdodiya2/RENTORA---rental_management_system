@@ -234,7 +234,7 @@ export const VENDOR_ORDERS = [
       phone: '+91 98250 44882',
       city: 'Ahmedabad',
       address: '402, Shivalik Highstreet, Keshavbaug, Bodakdev, Ahmedabad - 380015',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+      avatar: 'https://ui-avatars.com/api/?name=Alex+Patel&background=1D3557&color=ffffff&bold=true'
     },
     product: {
       id: 'prod-001',
@@ -490,7 +490,7 @@ export const VENDOR_CUSTOMERS = [
     company: 'Creative Studio 9',
     email: 'alex.patel@creativestudio.in',
     phone: '+91 98250 44882',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    avatar: 'https://ui-avatars.com/api/?name=Alex+Patel&background=1D3557&color=ffffff&bold=true',
     city: 'Ahmedabad',
     status: 'Verified Prime',
     totalOrders: 6,

@@ -1,26 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FEATURED_PRODUCTS } from '../../data/mockData';
 import ProductCard from './ProductCard';
 import { Sparkles, SlidersHorizontal, ArrowRight, ShieldAlert } from 'lucide-react';
+import api from '../../services/api';
 import './FeaturedProducts.css';
+
+function formatApiProduct(p) {
+  let primaryImg = p.primaryImage || (p.images && p.images[0]?.imageUrl) || (Array.isArray(p.images) && typeof p.images[0] === 'string' ? p.images[0] : null);
+  if (!primaryImg || typeof primaryImg !== 'string' || primaryImg.includes('unsplash.com/photos/')) {
+    primaryImg = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+  }
+
+  const imgList = (p.images && p.images.length > 0)
+    ? p.images.map(i => {
+        const u = typeof i === 'string' ? i : i?.imageUrl;
+        if (!u || typeof u !== 'string' || u.includes('unsplash.com/photos/')) {
+          return 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+        }
+        return u;
+      }).filter(Boolean)
+    : [primaryImg];
+
+  return {
+    id: p.id,
+    title: p.name || p.title,
+    category: p.category?.name || p.category || 'Equipment',
+    categorySlug: p.category?.slug || p.categorySlug || p.categoryId || 'cameras',
+    pricePerDay: Number(p.pricePerDay || 0),
+    pricePerHour: Number(p.pricePerHour || Math.round((p.pricePerDay || 0) / 8)),
+    pricePerWeek: Number(p.pricePerWeek || (p.pricePerDay || 0) * 5),
+    pricePerMonth: Number(p.pricePerMonth || (p.pricePerDay || 0) * 18),
+    deposit: Number(p.securityDeposit || p.deposit || 0),
+    rating: p.rating ? Number(p.rating) : 5.0,
+    reviews: p.reviewsCount || p.reviews || 0,
+    instantBooking: true,
+    images: imgList.length > 0 ? imgList : [primaryImg],
+    vendor: {
+      id: p.vendor?.id || 'vnd-1',
+      name: p.vendor?.businessName || p.vendor?.name || 'Rentora Verified Store',
+      city: p.vendor?.city || 'Ahmedabad',
+      rating: 4.9
+    },
+    features: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Verified Stock', 'Same-Day Handover', 'Damage Covered']
+  };
+}
 
 export default function FeaturedProducts({ selectedCategory, onSelectCategory }) {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('all');
   const [sortBy, setSortBy] = useState('popular');
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [allProducts, setAllProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+    api.get('/products?limit=100')
+      .then((res) => {
+        if (!isMounted) return;
+        const results = res.data?.data?.results || res.data?.data?.rows || (Array.isArray(res.data?.data) ? res.data.data : []);
+        if (Array.isArray(results)) {
+          const liveMapped = results.map(formatApiProduct);
+          // Strictly deduplicate by ID and unique title
+          const uniqueMap = new Map();
+          for (const item of liveMapped) {
+            const key = item.id || item.title;
+            if (!uniqueMap.has(key)) {
+              uniqueMap.set(key, item);
+            }
+          }
+          setAllProducts(Array.from(uniqueMap.values()));
+        }
+      })
+      .catch((err) => {
+        console.warn('[FeaturedProducts] Backend fetch notice:', err.message);
+        if (isMounted) setAllProducts([]);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   const filters = [
     { id: 'all', label: 'All Rentals' },
     { id: 'cameras', label: 'Cameras & Lenses' },
     { id: 'electronics', label: 'Electronics & PS5' },
     { id: 'vehicles', label: 'Vehicles & SUVs' },
+    { id: 'furniture', label: 'Furniture & Workspaces' },
     { id: 'event-party', label: 'Event & Sound' },
     { id: 'sports-outdoor', label: 'Outdoor & Camping' },
   ];
 
-  const filteredProducts = FEATURED_PRODUCTS.filter(p => {
+  const filteredProducts = allProducts.filter(p => {
     const currentCategory = selectedCategory && selectedCategory !== 'all' ? selectedCategory : activeFilter;
     if (currentCategory === 'all') return true;
     return p.categorySlug === currentCategory;
@@ -32,6 +106,11 @@ export default function FeaturedProducts({ selectedCategory, onSelectCategory })
     if (sortBy === 'rating') return b.rating - a.rating;
     return 0;
   });
+
+  // Display top 4 featured / most rented products on standard homepage overview
+  const displayProducts = (activeFilter === 'all' && (!selectedCategory || selectedCategory === 'all'))
+    ? sortedProducts.slice(0, 4)
+    : sortedProducts;
 
   return (
     <section id="featured" className="py-16 bg-[#F1FAEE] relative">
@@ -91,9 +170,9 @@ export default function FeaturedProducts({ selectedCategory, onSelectCategory })
         </div>
 
         {/* Products Grid */}
-        {sortedProducts.length > 0 ? (
+        {displayProducts.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {sortedProducts.map((product) => (
+            {displayProducts.map((product) => (
               <ProductCard
                 key={product.id}
                 product={product}

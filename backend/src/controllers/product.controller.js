@@ -29,8 +29,15 @@ class ProductController {
     const json = product.toJSON ? product.toJSON() : product;
     const isUnrated = !json.reviewsCount || json.reviewsCount === 0;
 
+    const vendorData = json.vendor ? {
+      ...json.vendor,
+      upiId: json.vendor.bankAccountMasked?.upiId || `${(json.vendor.businessName || 'vendor').toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis`,
+      qrCodeUrl: json.vendor.bankAccountMasked?.qrCodeUrl || null
+    } : null;
+
     return {
       ...json,
+      vendor: vendorData,
       rating: isUnrated ? null : Number(json.rating),
       isUnrated,
       pricePerDay: Number(json.pricePerDay),
@@ -118,7 +125,7 @@ class ProductController {
       const vendorInclude = {
         model: VendorProfile,
         as: 'vendor',
-        attributes: ['id', 'businessName', 'city', 'verificationStatus']
+        attributes: ['id', 'userId', 'businessName', 'city', 'verificationStatus', 'bankAccountMasked']
       };
 
       if (city) {
@@ -143,7 +150,8 @@ class ProductController {
           {
             model: ProductImage,
             as: 'images',
-            attributes: ['id', 'imageUrl', 'altText', 'isPrimary', 'displayOrder']
+            attributes: ['id', 'imageUrl', 'altText', 'isPrimary', 'displayOrder'],
+            order: [['displayOrder', 'ASC']]
           },
           {
             model: Inventory,
@@ -182,7 +190,7 @@ class ProductController {
         },
         include: [
           { model: Category, as: 'category', attributes: ['id', 'name', 'slug', 'iconName'] },
-          { model: VendorProfile, as: 'vendor', attributes: ['id', 'businessName', 'city'] },
+          { model: VendorProfile, as: 'vendor', attributes: ['id', 'userId', 'businessName', 'city', 'bankAccountMasked'] },
           { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl', 'isPrimary', 'displayOrder'] },
           { model: Inventory, as: 'inventory', attributes: ['totalStock', 'availableStock'] }
         ],
@@ -218,7 +226,7 @@ class ProductController {
           { 
             model: VendorProfile, 
             as: 'vendor', 
-            attributes: ['id', 'businessName', 'businessCategory', 'city', 'verificationStatus'] 
+            attributes: ['id', 'userId', 'businessName', 'businessCategory', 'city', 'verificationStatus', 'businessPhone', 'businessAddress', 'bankAccountMasked'] 
           },
           { 
             model: ProductImage, 

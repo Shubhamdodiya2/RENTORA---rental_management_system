@@ -80,6 +80,14 @@ class BookingService {
           throw err;
         }
 
+        // Self-Rent Prevention: Vendor cannot rent their own product listing
+        const vendorProfile = await VendorProfile.findByPk(product.vendorId, { transaction: t });
+        if (vendorProfile && vendorProfile.userId === customerId) {
+          const err = new Error('You are the registered vendor for this product. Vendors cannot rent their own equipment. Only customer accounts can rent products.');
+          err.statusCode = 403;
+          throw err;
+        }
+
         // Acquire row lock and verify date-range availability
         await AvailabilityService.acquireReservationLockAndVerify(
           product.id,
@@ -118,7 +126,8 @@ class BookingService {
       const bookingMetadata = {
         otpMetadata,
         clientNotes: rentalNotes || '',
-        pricingBreakdown: pricing
+        pricingBreakdown: pricing,
+        customerRefundUpi: payload.customerRefundUpi || null
       };
 
       // 5. Create Booking record (Step 1: BOOKING_CONFIRMED)

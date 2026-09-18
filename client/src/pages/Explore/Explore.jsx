@@ -20,12 +20,60 @@ import {
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import { FEATURED_PRODUCTS, CATEGORIES } from '../../data/mockData';
 import { useBooking } from '../../context/BookingContext';
+import { useWishlist } from '../../context/WishlistContext';
+import api from '../../services/api';
 import './Explore.css';
+
+function formatApiProduct(p) {
+  let primaryImg = p.primaryImage || (p.images && p.images[0]?.imageUrl) || (Array.isArray(p.images) && typeof p.images[0] === 'string' ? p.images[0] : null);
+  if (!primaryImg || typeof primaryImg !== 'string' || primaryImg.includes('unsplash.com/photos/')) {
+    primaryImg = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+  }
+
+  const imgList = (p.images && p.images.length > 0)
+    ? p.images.map(i => {
+        const u = typeof i === 'string' ? i : i?.imageUrl;
+        if (!u || typeof u !== 'string' || u.includes('unsplash.com/photos/')) {
+          return 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+        }
+        return u;
+      }).filter(Boolean)
+    : [primaryImg];
+
+  return {
+    id: p.id,
+    title: p.name || p.title,
+    category: p.category?.name || p.category || 'Equipment',
+    categorySlug: p.category?.slug || p.categorySlug || p.categoryId || 'cameras',
+    pricePerDay: Number(p.pricePerDay || 0),
+    pricePerHour: Number(p.pricePerHour || Math.round((p.pricePerDay || 0) / 8)),
+    pricePerWeek: Number(p.pricePerWeek || (p.pricePerDay || 0) * 5),
+    pricePerMonth: Number(p.pricePerMonth || (p.pricePerDay || 0) * 18),
+    deposit: Number(p.securityDeposit || p.deposit || 0),
+    rating: p.rating ? Number(p.rating) : 5.0,
+    reviews: p.reviewsCount || p.reviews || 0,
+    instantBooking: true,
+    images: imgList.length > 0 ? imgList : [primaryImg],
+    vendor: {
+      id: p.vendor?.id || 'vnd-1',
+      name: p.vendor?.businessName || p.vendor?.name || 'Rentora Verified Store',
+      city: p.vendor?.city || 'Ahmedabad',
+      rating: 4.9
+    },
+    features: Array.isArray(p.tags) && p.tags.length > 0 ? p.tags : ['Verified Stock', 'Same-Day Handover', 'Damage Covered']
+  };
+}
 
 export default function Explore() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { updateBookingDraft } = useBooking();
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
+  // Catalog State
+  const [allProducts, setAllProducts] = useState([]);
+  const [categoriesList, setCategoriesList] = useState(CATEGORIES);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
@@ -37,7 +85,53 @@ export default function Explore() {
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('popular');
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [wishlist, setWishlist] = useState({});
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoading(true);
+    // Fetch live products
+    api.get('/products?limit=100')
+      .then((res) => {
+        if (!isMounted) return;
+        const results = res.data?.data?.results || res.data?.data?.rows || (Array.isArray(res.data?.data) ? res.data.data : []);
+        if (Array.isArray(results)) {
+          const liveMapped = results.map(formatApiProduct);
+          const uniqueMap = new Map();
+          for (const item of liveMapped) {
+            const key = item.id || item.title;
+            if (!uniqueMap.has(key)) {
+              uniqueMap.set(key, item);
+            }
+          }
+          setAllProducts(Array.from(uniqueMap.values()));
+        }
+      })
+      .catch((err) => {
+        console.warn('[Explore] Backend products notice:', err.message);
+        if (isMounted) setAllProducts([]);
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+
+    // Fetch live categories
+    api.get('/categories')
+      .then((res) => {
+        if (!isMounted) return;
+        if (Array.isArray(res.data?.data) && res.data.data.length > 0) {
+          const liveCats = res.data.data.map(c => ({
+            id: c.id,
+            name: c.name,
+            slug: c.slug || c.id,
+            count: c.productCount ? `${c.productCount} items` : 'Available'
+          }));
+          setCategoriesList(liveCats);
+        }
+      })
+      .catch(() => {});
+
+    return () => { isMounted = false; };
+  }, []);
 
   useEffect(() => {
     const q = searchParams.get('search');
@@ -48,11 +142,6 @@ export default function Explore() {
 
   // Quick Rent Modal state
   const [quickRentProduct, setQuickRentProduct] = useState(null);
-
-  const toggleWishlist = (id, e) => {
-    e.stopPropagation();
-    setWishlist(prev => ({ ...prev, [id]: !prev[id] }));
-  };
 
   const handleQuickRent = (product, e) => {
     e.stopPropagation();
@@ -66,7 +155,7 @@ export default function Explore() {
 
   // Filter products logic
   const filteredProducts = useMemo(() => {
-    return FEATURED_PRODUCTS.filter((item) => {
+    return allProducts.filter((item) => {
       // Search query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -109,7 +198,7 @@ export default function Explore() {
       if (sortBy === 'rating') return b.rating - a.rating;
       return 0; // Default popular
     });
-  }, [searchQuery, selectedCategory, selectedDuration, maxPrice, instantOnly, selectedCity, minRating, sortBy]);
+  }, [allProducts, searchQuery, selectedCategory, selectedDuration, maxPrice, instantOnly, selectedCity, minRating, sortBy]);
 
   const resetFilters = () => {
     setSearchQuery('');
@@ -194,10 +283,10 @@ export default function Explore() {
                     }`}
                   >
                     <span>All Categories</span>
-                    <span>{FEATURED_PRODUCTS.length}</span>
+                    <span>{allProducts.length}</span>
                   </button>
 
-                  {CATEGORIES.map((cat) => (
+                  {categoriesList.map((cat) => (
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.slug)}
@@ -398,15 +487,18 @@ export default function Explore() {
                           </span>
 
                           <button
-                            onClick={(e) => toggleWishlist(product.id, e)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWishlist(product);
+                            }}
                             aria-label="Wishlist"
                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${
-                              wishlist[product.id]
+                              isInWishlist(product.id)
                                 ? 'bg-[#E63946] text-white scale-110 shadow-md'
                                 : 'bg-white/80 backdrop-blur-md text-[#1D3557] hover:bg-white hover:text-[#E63946]'
                             }`}
                           >
-                            <Heart size={16} fill={wishlist[product.id] ? 'currentColor' : 'none'} />
+                            <Heart size={16} fill={isInWishlist(product.id) ? 'currentColor' : 'none'} />
                           </button>
                         </div>
 
@@ -554,7 +646,7 @@ export default function Explore() {
                 className="w-full p-2.5 rounded-xl bg-[#F1FAEE] text-xs font-semibold"
               >
                 <option value="all">All Categories</option>
-                {CATEGORIES.map(c => (
+                {categoriesList.map(c => (
                   <option key={c.id} value={c.slug}>{c.name}</option>
                 ))}
               </select>

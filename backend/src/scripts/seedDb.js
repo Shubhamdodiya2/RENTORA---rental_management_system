@@ -56,7 +56,7 @@ async function seedDatabase() {
         fullName: 'Aarav Patel',
         passwordHash: customerPasswordHash,
         phone: '+91 98251 12345',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+        avatarUrl: 'https://ui-avatars.com/api/?name=Aarav+Patel&background=1D3557&color=ffffff&bold=true',
         isActive: true,
         isVerified: true,
         mustChangePassword: false

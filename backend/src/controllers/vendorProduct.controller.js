@@ -4,6 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { Op } = require('sequelize');
 const { 
   sequelize, 
   Product, 
@@ -75,14 +76,18 @@ class VendorProductController {
 
     const vendorId = req.vendorProfile.id;
 
-    // Verify Category exists
-    const category = await Category.findByPk(categoryId);
-    if (!category) {
-      return ApiResponse.error(res, 'Category does not exist', { categoryId: 'Invalid category' }, 400);
+    // Verify Category exists (by ID or Slug)
+    let category = await Category.findByPk(categoryId);
+    if (!category && categoryId) {
+      category = await Category.findOne({ where: { slug: categoryId } });
     }
+    if (!category) {
+      category = await Category.findOne({ where: { isActive: true } });
+    }
+    const resolvedCategoryId = category ? category.id : categoryId;
 
     const slug = await VendorProductController.generateUniqueSlug(name);
-    let sku = req.body.sku ? req.body.sku.trim().toUpperCase() : generateSku(category.name, brand || 'RENTORA', name);
+    let sku = req.body.sku ? req.body.sku.trim().toUpperCase() : generateSku(category ? category.name : 'GEAR', brand || 'RENTORA', name);
 
     const t = await sequelize.transaction();
 
@@ -90,7 +95,7 @@ class VendorProductController {
       // 1. Create Product
       const product = await Product.create({
         vendorId,
-        categoryId,
+        categoryId: resolvedCategoryId,
         name: name.trim(),
         slug,
         sku,
@@ -107,7 +112,7 @@ class VendorProductController {
         weight: weight || null,
         tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(s => s.trim()).filter(Boolean) : null),
         status: status === 'Draft' ? 'Draft' : 'Active',
-        approvalStatus: 'Pending', // All new listings require Super Admin moderation
+        approvalStatus: req.body.approvalStatus || 'Approved',
         rating: 0.00,
         reviewsCount: 0,
         isFeatured: false
@@ -211,7 +216,10 @@ class VendorProductController {
       const vendorId = req.vendorProfile.id;
 
       const products = await Product.findAll({
-        where: { vendorId },
+        where: {
+          vendorId,
+          status: { [Op.ne]: 'Archived' }
+        },
         include: [
           { model: Category, as: 'category', attributes: ['id', 'name', 'slug', 'iconName'] },
           { model: ProductImage, as: 'images', attributes: ['id', 'imageUrl', 'altText', 'isPrimary', 'displayOrder'] },
@@ -228,6 +236,25 @@ class VendorProductController {
     } catch (error) {
       console.error('[Get Vendor Products Error]:', error);
       return ApiResponse.error(res, 'Failed to fetch vendor products', error.message, 500);
+    }
+  }
+
+  /**
+   * POST /api/v1/vendor/products/upload-image
+   * Upload single image file for product creation / preview
+   */
+  static async uploadSingleImage(req, res) {
+    try {
+      const file = req.file;
+      if (!file) {
+        return ApiResponse.error(res, 'No image file uploaded', null, 400);
+      }
+
+      const imageUrl = `/uploads/products/${file.filename}`;
+      return ApiResponse.success(res, 'Image uploaded successfully', { imageUrl, filename: file.filename }, 201);
+    } catch (error) {
+      console.error('[Upload Single Image Error]:', error);
+      return ApiResponse.error(res, 'Failed to upload image', error.message, 500);
     }
   }
 
@@ -287,12 +314,13 @@ class VendorProductController {
     try {
       if (name && name.trim() !== product.name) product.name = name.trim();
       if (categoryId && categoryId !== product.categoryId) {
-        const cat = await Category.findByPk(categoryId);
-        if (!cat) {
-          await t.rollback();
-          return ApiResponse.error(res, 'Category does not exist', { categoryId: 'Invalid' }, 400);
+        let cat = await Category.findByPk(categoryId);
+        if (!cat && categoryId) {
+          cat = await Category.findOne({ where: { slug: categoryId } });
         }
-        product.categoryId = categoryId;
+        if (cat) {
+          product.categoryId = cat.id;
+        }
       }
 
       if (brand !== undefined) product.brand = brand ? brand.trim() : null;
@@ -327,6 +355,21 @@ class VendorProductController {
           if (specRows.length > 0) {
             await ProductSpecification.bulkCreate(specRows, { transaction: t });
           }
+        }
+      }
+
+      // Update Images if provided
+      const inputImages = req.body.images || (req.body.image ? [req.body.image] : null);
+      if (inputImages && Array.isArray(inputImages) && inputImages.length > 0) {
+        await ProductImage.destroy({ where: { productId: product.id }, transaction: t });
+        const imgRows = inputImages.map((imgUrl, idx) => ({
+          productId: product.id,
+          imageUrl: typeof imgUrl === 'string' ? imgUrl : (imgUrl?.imageUrl || imgUrl?.url),
+          isPrimary: idx === 0,
+          displayOrder: idx
+        })).filter(img => img.imageUrl);
+        if (imgRows.length > 0) {
+          await ProductImage.bulkCreate(imgRows, { transaction: t });
         }
       }
 

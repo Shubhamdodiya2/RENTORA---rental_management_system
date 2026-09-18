@@ -150,13 +150,13 @@ export default function CustomerDetails() {
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Total Spend (LTV)</span>
             <div className="text-lg font-extrabold text-slate-900 font-['Sora'] mt-0.5">
-              ₹{customer.totalSpending.toLocaleString('en-IN')}
+              ₹{(Number(customer.totalSpending ?? customer.totalSpent ?? 0)).toLocaleString('en-IN')}
             </div>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">
             <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Completed Rentals</span>
             <div className="text-lg font-extrabold text-slate-900 font-['Sora'] mt-0.5">
-              {customer.totalOrders} Orders
+              {customer.totalRentals || customer.totalOrders || 0} Orders
             </div>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/60">

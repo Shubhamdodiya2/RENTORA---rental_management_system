@@ -19,28 +19,13 @@ import {
   X,
   Store,
   Compass,
-  BadgeCheck,
-  Sparkles
+  Sparkles,
+  HelpCircle
 } from 'lucide-react';
 import Logo from '../Logo/Logo';
 import { useVendor } from '../../context/VendorContext';
 import { useAuth } from '../../context/AuthContext';
 import './VendorSidebar.css';
-
-const navItems = [
-  { path: '/vendor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/vendor/products', label: 'Products', icon: Package, badge: '48' },
-  { path: '/vendor/inventory', label: 'Inventory', icon: Boxes, alert: '4 Low' },
-  { path: '/vendor/pricing', label: 'Pricing & Rates', icon: Tag },
-  { path: '/vendor/orders', label: 'Orders & Quotes', icon: ClipboardList, badge: '5 New' },
-  { path: '/vendor/pickups-returns', label: 'Pickup & Returns', icon: Truck, alert: '2 Due' },
-  { path: '/vendor/customers', label: 'Customers', icon: Users },
-  { path: '/vendor/invoices', label: 'Invoices', icon: Receipt },
-  { path: '/vendor/payments', label: 'Payouts & Ledger', icon: CreditCard },
-  { path: '/vendor/reports', label: 'Reports & Analytics', icon: BarChart3 },
-  { path: '/vendor/notifications', label: 'Notifications', icon: Bell, badge: '4' },
-  { path: '/vendor/settings', label: 'Store Settings', icon: Settings },
-];
 
 export default function VendorSidebar({
   isOpen,
@@ -48,9 +33,28 @@ export default function VendorSidebar({
   isCollapsed,
   onToggleCollapse
 }) {
-  const { vendorProfile } = useVendor();
+  const { vendorProfile, products, orders } = useVendor();
   const { logout } = useAuth();
   const navigate = useNavigate();
+
+  const activeOrdersCount = orders.filter(o => o.orderStatus === 'Confirmed' || o.orderStatus === 'Processing' || o.status === 'BOOKING_CONFIRMED').length;
+  const lowStockCount = products.filter(p => p.availableStock !== undefined && p.availableStock <= (p.minStockAlert || 1)).length;
+
+  const navItems = [
+    { path: '/vendor/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/vendor/products', label: 'Products', icon: Package, badge: products.length > 0 ? String(products.length) : null },
+    { path: '/vendor/inventory', label: 'Inventory', icon: Boxes, alert: lowStockCount > 0 ? `${lowStockCount} Low` : null },
+    { path: '/vendor/pricing', label: 'Pricing & Rates', icon: Tag },
+    { path: '/vendor/orders', label: 'Orders & Quotes', icon: ClipboardList, badge: activeOrdersCount > 0 ? `${activeOrdersCount} New` : null },
+    { path: '/vendor/pickups-returns', label: 'Pickup & Returns', icon: Truck },
+    { path: '/vendor/customers', label: 'Customers', icon: Users },
+    { path: '/vendor/invoices', label: 'Invoices', icon: Receipt },
+    { path: '/vendor/payments', label: 'Payouts & Ledger', icon: CreditCard },
+    { path: '/vendor/reports', label: 'Reports & Analytics', icon: BarChart3 },
+    { path: '/vendor/notifications', label: 'Notifications', icon: Bell },
+    { path: '/vendor/support', label: 'Help & Support', icon: HelpCircle },
+    { path: '/vendor/settings', label: 'Store Settings', icon: Settings },
+  ];
 
   const handleLogout = () => {
     logout();

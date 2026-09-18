@@ -10,11 +10,13 @@ async function authenticate(req, res, next) {
   try {
     let token = null;
 
-    // 1. Extract Bearer Token from Authorization Header
+    // 1. Extract Bearer Token from Authorization Header, Cookies, or Query Param
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
     } else if (req.cookies && req.cookies.rentora_at) {
       token = req.cookies.rentora_at;
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
     }
 
     if (!token) {

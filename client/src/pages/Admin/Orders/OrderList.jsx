@@ -43,13 +43,14 @@ export default function OrderList() {
   ];
 
   const filteredOrders = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
     return orders.filter((o) => {
-      const matchesSearch =
-        o.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.customer?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.vendor?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.product?.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const orderNum = (o.orderNumber || o.id || '').toLowerCase();
+      const custName = (o.customer?.name || o.customerName || '').toLowerCase();
+      const vendName = (o.vendor?.name || o.vendorName || '').toLowerCase();
+      const prodName = (o.product?.name || o.productName || '').toLowerCase();
 
+      const matchesSearch = !q || orderNum.includes(q) || custName.includes(q) || vendName.includes(q) || prodName.includes(q);
       const matchesStatus = statusFilter === 'all' || o.orderStatus === statusFilter;
       const matchesPayment = paymentFilter === 'all' || o.paymentStatus === paymentFilter;
 
@@ -162,39 +163,39 @@ export default function OrderList() {
 
                     {/* Customer */}
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-slate-900">{order.customer?.name}</div>
-                      <div className="text-[11px] text-slate-500">{order.customer?.city}</div>
+                      <div className="font-semibold text-slate-900">{order.customer?.name || order.customerName || 'Customer'}</div>
+                      <div className="text-[11px] text-slate-500">{order.customer?.city || order.customerCity || 'Ahmedabad'}</div>
                     </td>
 
                     {/* Vendor */}
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-slate-900">{order.vendor?.name}</div>
-                      <div className="text-[10px] text-slate-400">{order.vendor?.city}</div>
+                      <div className="font-semibold text-slate-900">{order.vendor?.name || order.vendorName || 'Vendor Store'}</div>
+                      <div className="text-[10px] text-slate-400">{order.vendor?.city || order.vendorCity || 'Ahmedabad'}</div>
                     </td>
 
                     {/* Gear */}
                     <td className="py-4 px-4">
-                      <div className="font-medium text-slate-800 line-clamp-1">{order.product?.name}</div>
+                      <div className="font-medium text-slate-800 line-clamp-1">{order.product?.name || order.productName || 'Rental Equipment'}</div>
                       <div className="text-[10px] text-slate-500">
-                        {order.startDate} → {order.endDate} ({order.durationDays}d)
+                        {order.startDate || '18 Sept'} → {order.endDate || '19 Sept'} ({order.durationDays || 1}d)
                       </div>
                     </td>
 
                     {/* Total & Commission */}
                     <td className="py-4 px-4">
                       <div className="font-bold text-slate-900 font-['Sora']">
-                        ₹{order.totalAmount.toLocaleString('en-IN')}
+                        ₹{(Number(order.totalAmount ?? order.amount ?? 0)).toLocaleString('en-IN')}
                       </div>
                       <span className="text-[10px] text-slate-500 font-medium">
-                        Comm: ₹{order.platformCommission}
+                        Comm: ₹{(Number(order.platformCommission ?? order.commission ?? 0)).toLocaleString('en-IN')}
                       </span>
                     </td>
 
                     {/* Escrow */}
                     <td className="py-4 px-4">
-                      <div className="font-semibold text-emerald-700">₹{order.depositAmount}</div>
+                      <div className="font-semibold text-emerald-700">₹{(Number(order.depositAmount ?? order.securityDeposit ?? 0)).toLocaleString('en-IN')}</div>
                       <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-medium inline-block mt-0.5">
-                        {order.escrowStatus}
+                        {order.escrowStatus || 'Locked in Escrow'}
                       </span>
                     </td>
 

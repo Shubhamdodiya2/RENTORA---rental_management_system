@@ -23,9 +23,14 @@ import './Booking.css';
 export default function Booking() {
   const navigate = useNavigate();
   const { bookingDraft, updateBookingDraft, calculateTotal } = useBooking();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, vendorProfile } = useAuth();
 
   const product = bookingDraft.product;
+
+  const isOwnerVendor = Boolean(
+    (user && product?.vendor?.userId && user.id === product.vendor.userId) ||
+    (vendorProfile && product?.vendor?.id && vendorProfile.id === product.vendor.id)
+  );
 
   const [deliveryType, setDeliveryType] = useState(bookingDraft.deliveryType || 'doorstep');
   const [pickupTime, setPickupTime] = useState(bookingDraft.pickupTime || '10:00 AM');
@@ -51,6 +56,11 @@ export default function Booking() {
   }
 
   const handleProceedToCheckout = () => {
+    if (isOwnerVendor) {
+      alert("You are the vendor for this equipment. Vendors cannot rent their own listings.");
+      return;
+    }
+
     updateBookingDraft({
       deliveryType,
       pickupTime,
@@ -283,13 +293,27 @@ export default function Booking() {
 
               {/* Action Button */}
               <div className="space-y-2 pt-2">
-                <button
-                  onClick={handleProceedToCheckout}
-                  className="w-full py-4 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white font-extrabold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
-                >
-                  <span>Proceed to Review & Checkout</span>
-                  <ArrowRight size={16} />
-                </button>
+                {isOwnerVendor ? (
+                  <div className="space-y-3">
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-300 text-[11px] text-amber-800 font-medium leading-relaxed">
+                      ⚠️ You are the owner of this equipment. Vendors cannot rent their own listings.
+                    </div>
+                    <button
+                      disabled
+                      className="w-full py-3.5 rounded-xl bg-slate-200 text-slate-500 font-extrabold text-xs cursor-not-allowed flex items-center justify-center gap-2"
+                    >
+                      <span>Cannot Checkout Own Listing</span>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleProceedToCheckout}
+                    className="w-full py-4 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white font-extrabold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
+                  >
+                    <span>Proceed to Review & Checkout</span>
+                    <ArrowRight size={16} />
+                  </button>
+                )}
 
                 {!isAuthenticated && (
                   <p className="text-[11px] text-center text-[#457B9D]">

@@ -3,12 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, Outlet }
 
 // Global Context Providers
 import { AuthProvider } from './context/AuthContext';
+import { WishlistProvider } from './context/WishlistContext';
 import { BookingProvider } from './context/BookingContext';
 import { AdminProvider } from './context/AdminContext';
 
 // Navigation & Layout Components
 import Navbar from './components/Navbar/Navbar';
 import Footer from './components/Footer/Footer';
+import WishlistDrawer from './components/WishlistDrawer/WishlistDrawer';
 import CustomerLayout from './components/CustomerLayout/CustomerLayout';
 import VendorLayout from './components/VendorLayout/VendorLayout';
 import SuperAdminLayout from './components/AdminLayout/SuperAdminLayout';
@@ -18,6 +20,7 @@ import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
 import Home from './pages/Home/Home';
 import Explore from './pages/Explore/Explore';
 import ProductDetails from './pages/ProductDetails/ProductDetails';
+import Wishlist from './pages/Customer/Wishlist/Wishlist';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import ForgotPassword from './pages/Auth/ForgotPassword';
@@ -44,6 +47,8 @@ import VendorOverview from './pages/Vendor/VendorOverview/VendorOverview';
 import VendorProducts from './pages/Vendor/VendorProducts/VendorProducts';
 import AddEditProduct from './pages/Vendor/VendorProducts/AddEditProduct';
 import VendorInventory from './pages/Vendor/VendorInventory/VendorInventory';
+import CustomerSupport from './pages/Customer/Support/CustomerSupport';
+
 import VendorPricing from './pages/Vendor/VendorPricing/VendorPricing';
 import VendorOrders from './pages/Vendor/VendorOrders/VendorOrders';
 import VendorQuotations from './pages/Vendor/VendorQuotations/VendorQuotations';
@@ -53,6 +58,7 @@ import VendorInvoices from './pages/Vendor/VendorInvoices/VendorInvoices';
 import VendorPayments from './pages/Vendor/VendorPayments/VendorPayments';
 import VendorReports from './pages/Vendor/VendorReports/VendorReports';
 import VendorNotifications from './pages/Vendor/VendorNotifications/VendorNotifications';
+import VendorSupport from './pages/Vendor/VendorSupport/VendorSupport';
 import VendorSettings from './pages/Vendor/VendorSettings/VendorSettings';
 
 // Super Admin Dashboard Pages
@@ -101,42 +107,47 @@ function PublicLayout() {
 export default function App() {
   return (
     <AuthProvider>
-      <BookingProvider>
-        <AdminProvider>
-          <Router>
-            <ScrollToTop />
-            <Routes>
-              {/* 1. Public Marketplace & Auth Routes */}
-              <Route element={<PublicLayout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/products" element={<Explore />} />
-                <Route path="/products/:productId" element={<ProductDetails />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/unauthorized" element={<Unauthorized />} />
-                <Route path="/booking" element={<Booking />} />
-                <Route path="/checkout" element={<Checkout />} />
-                <Route path="/booking/success" element={<BookingSuccess />} />
-              </Route>
-
-              {/* 2. Customer SaaS Portal Routes (Protected: CUSTOMER) */}
-              <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
-                <Route path="/customer" element={<CustomerLayout />}>
-                  <Route index element={<Navigate to="/customer/dashboard" replace />} />
-                  <Route path="dashboard" element={<DashboardOverview />} />
-                  <Route path="rentals" element={<MyRentals />} />
-                  <Route path="bookings" element={<MyBookings />} />
-                  <Route path="quotations" element={<Quotations />} />
-                  <Route path="contracts" element={<Contracts />} />
-                  <Route path="invoices" element={<Invoices />} />
-                  <Route path="payments" element={<Payments />} />
-                  <Route path="pickup-returns" element={<PickupReturns />} />
-                  <Route path="notifications" element={<Notifications />} />
-                  <Route path="profile" element={<Profile />} />
-                  <Route path="settings" element={<Settings />} />
+      <WishlistProvider>
+        <BookingProvider>
+          <AdminProvider>
+            <Router>
+              <ScrollToTop />
+              <WishlistDrawer />
+              <Routes>
+                {/* 1. Public Marketplace & Auth Routes */}
+                <Route element={<PublicLayout />}>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<Explore />} />
+                  <Route path="/products/:productId" element={<ProductDetails />} />
+                  <Route path="/wishlist" element={<Wishlist />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<Signup />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/unauthorized" element={<Unauthorized />} />
+                  <Route path="/booking" element={<Booking />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/booking/success" element={<BookingSuccess />} />
                 </Route>
-              </Route>
+
+                {/* 2. Customer SaaS Portal Routes (Protected: CUSTOMER) */}
+                <Route element={<ProtectedRoute allowedRoles={['CUSTOMER']} />}>
+                  <Route path="/customer" element={<CustomerLayout />}>
+                    <Route index element={<Navigate to="/customer/dashboard" replace />} />
+                    <Route path="dashboard" element={<DashboardOverview />} />
+                    <Route path="wishlist" element={<Wishlist />} />
+                    <Route path="rentals" element={<MyRentals />} />
+                    <Route path="bookings" element={<MyBookings />} />
+                    <Route path="quotations" element={<Quotations />} />
+                    <Route path="contracts" element={<Contracts />} />
+                    <Route path="invoices" element={<Invoices />} />
+                    <Route path="payments" element={<Payments />} />
+                    <Route path="pickup-returns" element={<PickupReturns />} />
+                    <Route path="notifications" element={<Notifications />} />
+                    <Route path="support" element={<CustomerSupport />} />
+                    <Route path="profile" element={<Profile />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
+                </Route>
 
               {/* 3. Vendor SaaS Portal Routes (Protected: VENDOR) */}
               <Route element={<ProtectedRoute allowedRoles={['VENDOR']} />}>
@@ -159,6 +170,7 @@ export default function App() {
                   <Route path="payments" element={<VendorPayments />} />
                   <Route path="reports" element={<VendorReports />} />
                   <Route path="notifications" element={<VendorNotifications />} />
+                  <Route path="support" element={<VendorSupport />} />
                   <Route path="settings" element={<VendorSettings />} />
                 </Route>
               </Route>
@@ -193,6 +205,7 @@ export default function App() {
           </Router>
         </AdminProvider>
       </BookingProvider>
+      </WishlistProvider>
     </AuthProvider>
   );
 }

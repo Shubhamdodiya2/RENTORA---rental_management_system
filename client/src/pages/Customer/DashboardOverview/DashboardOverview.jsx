@@ -44,6 +44,7 @@ export default function DashboardOverview() {
 
   useEffect(() => {
     const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+
     if (token) {
       Promise.all([
         fetch('/api/v1/bookings/my', { headers: { Authorization: `Bearer ${token}` } })
@@ -53,48 +54,47 @@ export default function DashboardOverview() {
           .then((r) => r.json())
           .catch(() => null)
       ]).then(([bRes, iRes]) => {
-        if (bRes && bRes.success && Array.isArray(bRes.data)) {
-          setLiveBookings(bRes.data);
+        let bookingsList = [];
+        if (bRes && bRes.success) {
+          bookingsList = bRes.data?.results || bRes.data?.rows || (Array.isArray(bRes.data) ? bRes.data : []);
         }
-        if (iRes && iRes.success && Array.isArray(iRes.data)) {
-          setLiveInvoices(iRes.data);
+        setLiveBookings(bookingsList);
+
+        if (iRes && iRes.success) {
+          const invList = iRes.data?.results || iRes.data?.rows || (Array.isArray(iRes.data) ? iRes.data : []);
+          setLiveInvoices(invList);
         }
         setHasFetched(true);
       });
     } else {
+      setLiveBookings([]);
       setHasFetched(true);
     }
   }, [user]);
 
   // Derived metrics
-  const isNewCustomer = hasFetched && user && liveBookings.length === 0;
-
-  const displayBookings = liveBookings.length > 0
-    ? liveBookings.map((b) => ({
-        id: b.id,
-        orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
-        title: b.items && b.items[0] ? (b.items[0].product ? b.items[0].product.name : 'Rental Gear') : 'Rental Gear',
-        image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || FEATURED_PRODUCTS[0].images[0]) : FEATURED_PRODUCTS[0].images[0],
-        vendor: {
-          id: b.vendorId,
-          name: b.vendor ? b.vendor.businessName : 'Rentora Store',
-          city: b.vendor ? b.vendor.city : 'Ahmedabad'
-        },
-        startDate: b.startDate,
-        endDate: b.endDate,
-        durationDays: b.totalRentalDays || 2,
-        rentalAmount: Number(b.rentalSubtotal || 0),
-        securityDeposit: Number(b.securityDeposit || 0),
-        totalPaid: Number(b.totalPayable || 0),
-        paymentStatus: b.paymentStatus || 'Pending',
-        rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : b.status,
-        daysRemaining: 2,
-        currentStep: 1,
-        rawBooking: b
-      }))
-    : isNewCustomer
-    ? []
-    : CUSTOMER_RENTALS;
+  const displayBookings = liveBookings.map((b) => ({
+    id: b.id,
+    orderId: b.bookingNumber || b.id?.slice(0, 8).toUpperCase(),
+    title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Gear',
+    image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80') : 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
+    vendor: {
+      id: b.vendorId,
+      name: b.vendor ? b.vendor.businessName : 'PixelCraft Rentals',
+      city: b.vendor ? b.vendor.city : 'Ahmedabad'
+    },
+    startDate: b.startDate,
+    endDate: b.endDate,
+    durationDays: b.totalRentalDays || 2,
+    rentalAmount: Number(b.rentalSubtotal || b.rentalAmount || 0),
+    securityDeposit: Number(b.securityDeposit || b.depositAmount || 0),
+    totalPaid: Number(b.totalPayable || b.totalAmount || 0),
+    paymentStatus: b.paymentStatus || 'Paid',
+    rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : (b.status || 'Active'),
+    daysRemaining: 2,
+    currentStep: 1,
+    rawBooking: b
+  }));
 
   const activeRentals = displayBookings.filter(
     (r) => r.rentalStatus === 'Active' || r.rentalStatus === 'BOOKING_CONFIRMED' || r.rentalStatus === 'Return Scheduled'
@@ -104,19 +104,10 @@ export default function DashboardOverview() {
     (r) => r.daysRemaining > 0 && r.daysRemaining <= 2
   );
 
-  const totalSpent = isNewCustomer
-    ? 0
-    : liveInvoices.length > 0
-    ? liveInvoices.reduce((acc, inv) => acc + Number(inv.totalAmount || 0), 0)
-    : 24850;
+  const totalSpent = displayBookings.reduce((acc, b) => acc + Number(b.totalPaid || 0), 0);
+  const escrowDeposit = displayBookings.reduce((acc, b) => acc + Number(b.securityDeposit || 0), 0);
 
-  const escrowDeposit = isNewCustomer
-    ? 0
-    : liveBookings.length > 0
-    ? liveBookings.reduce((acc, b) => acc + Number(b.securityDeposit || 0), 0)
-    : 9000;
-
-  const maxSpend = Math.max(...SPENDING_CHART_DATA.map((d) => d.amount));
+  const maxSpend = Math.max(5000, ...SPENDING_CHART_DATA.map((d) => d.amount));
 
   return (
     <div className="dashboard-overview-page">

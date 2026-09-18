@@ -11,13 +11,21 @@ class AdminProductController {
    * Moderation Queue: list all products with approval status filters
    */
   static async getAllProducts(req, res) {
-    const { approvalStatus, status, vendorId, categoryId, page = 1, limit = 20 } = req.query;
+    const { approvalStatus, status, vendorId, categoryId, search, page = 1, limit = 20 } = req.query;
 
     const where = {};
     if (approvalStatus) where.approvalStatus = approvalStatus;
     if (status) where.status = status;
     if (vendorId) where.vendorId = vendorId;
     if (categoryId) where.categoryId = categoryId;
+    if (search) {
+      const { Op } = require('sequelize');
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { description: { [Op.like]: `%${search}%` } },
+        { brand: { [Op.like]: `%${search}%` } }
+      ];
+    }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
@@ -117,10 +125,41 @@ class AdminProductController {
       await product.save();
 
       return ApiResponse.success(res, `Product featured status updated to ${Boolean(isFeatured)}`, product);
-
     } catch (error) {
       console.error('[Admin Toggle Featured Error]:', error);
       return ApiResponse.error(res, 'Failed to toggle featured status', error.message, 500);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/admin/products/:id
+   * Remove a product listing permanently from marketplace
+   */
+  static async deleteProduct(req, res) {
+    const { id } = req.params;
+    try {
+      const product = await Product.findByPk(id);
+      if (!product) {
+        return ApiResponse.error(res, 'Product not found', null, 404);
+      }
+
+      const productName = product.name;
+      await product.destroy();
+
+      await AuditLog.create({
+        adminName: req.user.fullName || 'SUPER_ADMIN',
+        action: 'PRODUCT_DELETED',
+        module: 'CATALOG',
+        description: `Product '${productName}' (ID: ${id}) was deleted by admin.`,
+        targetId: id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return ApiResponse.success(res, `Product '${productName}' has been deleted successfully`);
+    } catch (error) {
+      console.error('[Admin Delete Product Error]:', error);
+      return ApiResponse.error(res, 'Failed to delete product', error.message, 500);
     }
   }
 }

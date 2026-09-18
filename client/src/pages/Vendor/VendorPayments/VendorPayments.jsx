@@ -9,17 +9,39 @@ import {
   ArrowUpRight,
   Receipt,
   Eye,
-  Sparkles
+  Sparkles,
+  DollarSign
 } from 'lucide-react';
-import { VENDOR_PAYMENTS, VENDOR_METRICS, VENDOR_PROFILE } from '../../../data/vendorMockData';
 import { useVendor } from '../../../context/VendorContext';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import './VendorPayments.css';
 
 export default function VendorPayments() {
-  const { payments, showToast } = useVendor();
+  const { orders, vendorProfile, showToast } = useVendor();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+
+  // Derive payout items dynamically from orders
+  const payments = orders.map((o) => {
+    const gross = Number(o.totalAmount || 0);
+    const platformFee = Math.round(gross * 0.10); // 10% standard platform fee
+    const netPayout = gross - platformFee;
+
+    return {
+      id: o.id,
+      txnId: `PAY-${o.orderId.replace(/[^A-Za-z0-9]/g, '')}`,
+      orderId: o.orderId,
+      customer: o.customer.name,
+      date: o.orderDate || 'Recent',
+      amount: gross,
+      platformFee,
+      rentalEarning: netPayout,
+      payoutStatus: o.orderStatus === 'Completed' || o.orderStatus === 'Confirmed' ? 'Settled to Bank' : 'Escrow Pending'
+    };
+  });
+
+  const totalGrossRevenue = payments.reduce((sum, p) => sum + p.rentalEarning, 0);
+  const pendingEscrow = orders.filter(o => o.orderStatus !== 'Completed').reduce((sum, o) => sum + Number(o.securityDeposit || 0), 0);
 
   const filteredPayments = payments.filter((p) => {
     if (!searchQuery.trim()) return true;
@@ -44,7 +66,7 @@ export default function VendorPayments() {
 
         <div className="v-bank-capsule">
           <Building size={16} className="text-secondary-blue" />
-          <span>Settling to: <strong>{VENDOR_PROFILE.bankAccount}</strong></span>
+          <span>Settling to: <strong>HDFC Bank (•••• 5678)</strong></span>
         </div>
       </div>
 
@@ -52,19 +74,19 @@ export default function VendorPayments() {
       <div className="payout-stats-grid">
         <div className="v-stat-card">
           <span className="v-stat-title">Lifetime Settled Payouts</span>
-          <div className="v-stat-val text-navy">{VENDOR_METRICS.totalRevenue}</div>
+          <div className="v-stat-val text-navy">₹{totalGrossRevenue.toLocaleString('en-IN')}</div>
           <span className="text-[11px] text-emerald-600 font-semibold">100% Direct Bank NEFT / IMPS</span>
         </div>
 
         <div className="v-stat-card">
-          <span className="v-stat-title">This Month Net Earnings</span>
-          <div className="v-stat-val text-primary-red">{VENDOR_METRICS.monthlyEarnings}</div>
-          <span className="text-[11px] text-emerald-600 font-semibold">+18.4% growth vs last month</span>
+          <span className="v-stat-title">Current Period Net Earnings</span>
+          <div className="v-stat-val text-primary-red">₹{totalGrossRevenue.toLocaleString('en-IN')}</div>
+          <span className="text-[11px] text-emerald-600 font-semibold">Live operational trajectory</span>
         </div>
 
         <div className="v-stat-card">
           <span className="v-stat-title">Escrow Held Pending Return</span>
-          <div className="v-stat-val text-secondary-blue">{VENDOR_METRICS.pendingPayments}</div>
+          <div className="v-stat-val text-secondary-blue">₹{pendingEscrow.toLocaleString('en-IN')}</div>
           <span className="text-[11px] text-slate-500">Auto-transfers upon return inspection</span>
         </div>
       </div>

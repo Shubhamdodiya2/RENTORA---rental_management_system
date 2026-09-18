@@ -34,8 +34,10 @@ export default function AdminUsersManager() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    role: 'Operations Admin',
-    permissions: ['order_dispatch', 'pickup_tracking']
+    password: '',
+    phone: '',
+    role: 'Super Admin',
+    permissions: ['all_access']
   });
 
   const allAvailablePermissions = [
@@ -52,21 +54,25 @@ export default function AdminUsersManager() {
     setFormData({
       name: '',
       email: '',
-      role: 'Operations Admin',
-      permissions: ['order_dispatch', 'pickup_tracking']
+      password: '',
+      phone: '',
+      role: 'Super Admin',
+      permissions: ['all_access']
     });
     setCreateModalOpen(true);
   };
 
   const handleSaveCreate = (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim()) return;
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) return;
 
     addAdminUser({
-      name: formData.name,
-      email: formData.email,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      password: formData.password.trim(),
+      phone: formData.phone.trim(),
       role: formData.role,
-      permissions: formData.permissions
+      permissions: formData.role === 'Super Admin' ? ['all_access'] : formData.permissions
     });
 
     setCreateModalOpen(false);
@@ -318,7 +324,7 @@ export default function AdminUsersManager() {
               </div>
 
               <div>
-                <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Official Email Address</label>
+                <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Official Email Address (Login Username)</label>
                 <input
                   type="email"
                   required
@@ -329,17 +335,44 @@ export default function AdminUsersManager() {
                 />
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Login Password</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    placeholder="Min 6 characters"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Contact Phone</label>
+                  <input
+                    type="tel"
+                    placeholder="+91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Role Assignment</label>
+                <label className="block mb-1 text-slate-500 uppercase tracking-wider text-[10px]">Role Assignment & Access Level</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                   className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 cursor-pointer"
                 >
-                  <option value="Operations Admin">Operations Admin</option>
-                  <option value="Finance Admin">Finance Admin</option>
-                  <option value="Support Admin">Support Admin</option>
-                  <option value="Content Admin">Content Admin</option>
+                  <option value="Super Admin">Super Administrator (Full Root System Access)</option>
+                  <option value="Operations Admin">Operations Admin (Dispatch & Pickups)</option>
+                  <option value="Finance Admin">Finance Admin (Escrow & Payouts)</option>
+                  <option value="Support Admin">Support Admin (Tickets & Complaints)</option>
+                  <option value="Content Admin">Content Admin (Products & Categories)</option>
                 </select>
               </div>
 
