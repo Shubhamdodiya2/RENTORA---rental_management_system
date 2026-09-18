@@ -269,6 +269,24 @@ class ProductController {
   static async checkAvailability(req, res) {
     const { id } = req.params;
 
+    // Resolve product UUID if slug is provided
+    let productId = id;
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+    if (!isUUID) {
+      const product = await Product.findOne({
+        where: {
+          [Op.or]: [
+            { slug: id },
+            { sku: id }
+          ]
+        }
+      });
+      if (!product) {
+        return ApiResponse.error(res, 'Product listing not found', null, 404);
+      }
+      productId = product.id;
+    }
+
     // Check if client requested monthly matrix or specific date range
     if (req.query.month && req.query.year) {
       const validation = validateMonthlyMatrixQuery(req.query);
@@ -276,7 +294,7 @@ class ProductController {
         return ApiResponse.error(res, 'Invalid monthly matrix query', validation.errors, 400);
       }
       try {
-        const matrix = await AvailabilityService.getMonthlyMatrix(id, validation.sanitized.year, validation.sanitized.month);
+        const matrix = await AvailabilityService.getMonthlyMatrix(productId, validation.sanitized.year, validation.sanitized.month);
         return ApiResponse.success(res, 'Monthly availability matrix retrieved successfully', matrix);
       } catch (error) {
         const status = error.statusCode || 500;
@@ -293,7 +311,7 @@ class ProductController {
     const { startDate, endDate, quantity } = validation.sanitized;
 
     try {
-      const result = await AvailabilityService.checkAvailability(id, startDate, endDate, quantity);
+      const result = await AvailabilityService.checkAvailability(productId, startDate, endDate, quantity);
       return ApiResponse.success(res, 'Date availability verified successfully', result);
     } catch (error) {
       const status = error.statusCode || 500;

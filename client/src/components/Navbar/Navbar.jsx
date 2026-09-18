@@ -308,22 +308,22 @@ export default function Navbar() {
               </Link>
 
               {/* User Authentication Status */}
-              {isAuthenticated ? (
+              {isAuthenticated && user ? (
                 <div className="relative">
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                     className="flex items-center gap-2 p-1.5 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-bold text-[#1D3557] hover:bg-white transition-colors"
                   >
-                    <img src={user.avatar} alt={user.name} className="w-6 h-6 rounded-full object-cover" />
-                    <span className="hidden sm:inline truncate max-w-[100px]">{user.name.split(' ')[0]}</span>
+                    <img src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'} alt={user.fullName || user.name || 'User'} className="w-6 h-6 rounded-full object-cover" />
+                    <span className="hidden sm:inline truncate max-w-[100px]">{(user.fullName || user.name || 'User').split(' ')[0]}</span>
                     <ChevronDown size={12} />
                   </button>
 
                   {userDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-[#A8DADC]/40 p-2 z-50 animate-in fade-in">
                       <div className="px-3 py-2 border-b border-gray-100">
-                        <div className="font-bold text-xs text-[#1D3557]">{user.name}</div>
-                        <div className="text-[10px] text-[#457B9D] capitalize">{user.role} Account</div>
+                        <div className="font-bold text-xs text-[#1D3557]">{user.fullName || user.name || 'User'}</div>
+                        <div className="text-[10px] text-[#457B9D] capitalize">{user.email || 'Account'}</div>
                       </div>
                       <Link 
                         to="/customer/dashboard" 

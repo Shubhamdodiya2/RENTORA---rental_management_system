@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   UserRound, 
   Store, 
@@ -23,6 +23,7 @@ import './Auth.css';
 
 export default function Signup() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signup } = useAuth();
 
   const [role, setRole] = useState('customer'); // 'customer' | 'vendor'
@@ -83,7 +84,8 @@ export default function Signup() {
         city: customerData.city,
         role: 'customer'
       });
-      navigate('/customer/dashboard', { replace: true });
+      const returnTarget = location.state?.from;
+      navigate(returnTarget || '/customer/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please check your details.');
     } finally {
@@ -120,7 +122,8 @@ export default function Signup() {
         city: vendorData.city,
         role: 'vendor'
       });
-      navigate('/vendor/dashboard', { replace: true });
+      const returnTarget = location.state?.from;
+      navigate(returnTarget || '/vendor/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Vendor registration failed. Please check your details.');
     } finally {
@@ -161,6 +164,7 @@ export default function Signup() {
             <div className="grid grid-cols-1 gap-3">
               {/* Customer Option */}
               <div
+                id="customer-signup-card"
                 onClick={() => { setRole('customer'); setStep(2); setError(''); }}
                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
                   role === 'customer'
@@ -180,6 +184,7 @@ export default function Signup() {
 
               {/* Vendor Option */}
               <div
+                id="vendor-signup-card"
                 onClick={() => { setRole('vendor'); setStep(2); setError(''); }}
                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center gap-3.5 ${
                   role === 'vendor'
@@ -234,6 +239,7 @@ export default function Signup() {
                   </label>
                   <div className="relative">
                     <input
+                      name="fullName"
                       type="text"
                       required
                       placeholder="e.g. Aarav Patel"
@@ -252,6 +258,7 @@ export default function Signup() {
                   </label>
                   <div className="relative">
                     <input
+                      name="email"
                       type="email"
                       required
                       placeholder="aarav@example.com"
@@ -270,6 +277,7 @@ export default function Signup() {
                   </label>
                   <div className="relative">
                     <input
+                      name="phone"
                       type="tel"
                       required
                       placeholder="+91 98250 12345"
@@ -289,6 +297,7 @@ export default function Signup() {
                     </label>
                     <div className="relative">
                       <input
+                        name="password"
                         type={showPassword ? 'text' : 'password'}
                         required
                         placeholder="Min 8 chars"
@@ -312,6 +321,7 @@ export default function Signup() {
                     </label>
                     <div className="relative">
                       <input
+                        name="confirmPassword"
                         type={showConfirmPassword ? 'text' : 'password'}
                         required
                         placeholder="Repeat password"
@@ -333,6 +343,7 @@ export default function Signup() {
                 {/* Terms Checkbox */}
                 <label className="flex items-center gap-2 cursor-pointer text-xs text-[#457B9D] pt-1">
                   <input
+                    name="acceptTerms"
                     type="checkbox"
                     checked={customerData.acceptTerms}
                     onChange={(e) => setCustomerData({ ...customerData, acceptTerms: e.target.checked })}
@@ -543,7 +554,7 @@ export default function Signup() {
         {/* Footer */}
         <div className="text-center pt-2 border-t border-gray-100 text-xs text-[#457B9D]">
           Already have an account?{' '}
-          <Link to="/login" className="font-bold text-[#E63946] hover:underline">
+          <Link to="/login" state={location.state} className="font-bold text-[#E63946] hover:underline">
             Sign In Instead
           </Link>
         </div>

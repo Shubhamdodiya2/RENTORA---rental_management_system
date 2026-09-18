@@ -13,7 +13,11 @@ router.get('/vendor', authenticate, invoiceController.getVendorInvoices);
 router.get('/booking/:bookingId', authenticate, invoiceController.getInvoiceByBookingId);
 router.post('/booking/:bookingId/generate', authenticate, invoiceController.generateBookingInvoice);
 
-// Single Invoice by ID & Printable HTML
+// Invoice lookup by business invoice number (e.g. INV-2026-000001, REN-...)
+router.get('/number/:invoiceNumber', authenticate, invoiceController.getInvoiceByNumber);
+router.get('/number/:invoiceNumber/html', authenticate, invoiceController.renderInvoiceHtml);
+
+// Single Invoice by ID (UUID) & Printable HTML
 router.get('/:id', authenticate, invoiceController.getInvoiceById);
 router.get('/:id/html', authenticate, invoiceController.renderInvoiceHtml);
 

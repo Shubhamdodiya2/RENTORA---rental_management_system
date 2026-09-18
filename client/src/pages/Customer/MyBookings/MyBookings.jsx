@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -14,24 +14,77 @@ import {
   Receipt
 } from 'lucide-react';
 import { CUSTOMER_RENTALS } from '../../../data/customerMockData';
+import { FEATURED_PRODUCTS } from '../../../data/mockData';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
+import { useAuth } from '../../../context/AuthContext';
 import './MyBookings.css';
 
 export default function MyBookings() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [detailBooking, setDetailBooking] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  const filteredBookings = CUSTOMER_RENTALS.filter((b) => {
-    if (statusFilter !== 'All' && b.rentalStatus !== statusFilter) return false;
+  useEffect(() => {
+    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    if (token) {
+      fetch('/api/v1/bookings/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => res.json())
+        .then((resData) => {
+          if (resData.success && Array.isArray(resData.data)) {
+            if (resData.data.length > 0) {
+              const mapped = resData.data.map((b) => ({
+                id: b.id,
+                orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
+                title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Gear',
+                image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || FEATURED_PRODUCTS[0].images[0]) : FEATURED_PRODUCTS[0].images[0],
+                vendor: {
+                  id: b.vendorId,
+                  name: b.vendor ? b.vendor.businessName : 'Rentora Store',
+                  city: b.vendor ? b.vendor.city : 'Ahmedabad'
+                },
+                startDate: b.startDate,
+                endDate: b.endDate,
+                durationDays: b.totalRentalDays || 2,
+                rentalAmount: Number(b.rentalSubtotal || 0),
+                securityDeposit: Number(b.securityDeposit || 0),
+                totalPaid: Number(b.totalPayable || 0),
+                paymentStatus: b.paymentStatus || 'Pending',
+                rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : b.status,
+                rawBooking: b
+              }));
+              setBookings(mapped);
+            } else {
+              setBookings([]);
+            }
+          }
+        })
+        .catch(() => {
+          setBookings(CUSTOMER_RENTALS);
+        })
+        .finally(() => setHasLoaded(true));
+    } else {
+      setBookings(CUSTOMER_RENTALS);
+      setHasLoaded(true);
+    }
+  }, [user]);
+
+  const displayList = hasLoaded ? bookings : CUSTOMER_RENTALS;
+
+  const filteredBookings = displayList.filter((b) => {
+    if (statusFilter !== 'All' && b.rentalStatus !== statusFilter && b.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
         b.orderId.toLowerCase().includes(q) ||
         b.title.toLowerCase().includes(q) ||
-        b.vendor.name.toLowerCase().includes(q)
+        (b.vendor?.name && b.vendor.name.toLowerCase().includes(q))
       );
     }
     return true;

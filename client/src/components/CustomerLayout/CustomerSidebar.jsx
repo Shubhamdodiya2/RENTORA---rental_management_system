@@ -72,15 +72,15 @@ export default function CustomerSidebar({ isOpen, onClose }) {
         <div className="sidebar-profile-card">
           <div className="sidebar-avatar-wrapper">
             <img 
-              src={user?.avatar || CUSTOMER_PROFILE.avatar} 
-              alt={user?.name || CUSTOMER_PROFILE.name} 
+              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
+              alt={user?.fullName || user?.name || 'Customer'} 
               className="sidebar-avatar-img"
             />
             <span className="sidebar-online-indicator" title="Online" />
           </div>
           <div className="sidebar-profile-info">
             <div className="sidebar-profile-name">
-              <span>{user?.name || CUSTOMER_PROFILE.name}</span>
+              <span>{user?.fullName || user?.name || 'Customer'}</span>
               <BadgeCheck size={16} className="text-emerald-500 fill-emerald-100" />
             </div>
             <span className="sidebar-profile-tag">Customer Account</span>

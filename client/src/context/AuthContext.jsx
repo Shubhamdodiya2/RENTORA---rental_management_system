@@ -3,6 +3,17 @@ import api from '../services/api';
 
 const AuthContext = createContext();
 
+function normalizeUser(u) {
+  if (!u) return null;
+  const fullName = u.fullName || u.name || 'User';
+  return {
+    ...u,
+    fullName,
+    name: fullName,
+    avatar: u.avatarUrl || u.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
+  };
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [roles, setRoles] = useState([]);
@@ -28,7 +39,7 @@ export function AuthProvider({ children }) {
       if (savedUserData) {
         try {
           const parsed = JSON.parse(savedUserData);
-          setUser(parsed.user || parsed);
+          setUser(normalizeUser(parsed.user || parsed));
           setRoles(parsed.roles || (parsed.role ? [parsed.role.toUpperCase()] : ['CUSTOMER']));
           setCustomerProfile(parsed.customerProfile || null);
           setVendorProfile(parsed.vendorProfile || null);
@@ -43,12 +54,13 @@ export function AuthProvider({ children }) {
         const response = await api.get('/auth/me');
         if (response.data?.success) {
           const { user: fetchedUser, roles: fetchedRoles, customerProfile: cp, vendorProfile: vp } = response.data.data;
-          setUser(fetchedUser);
+          const normalized = normalizeUser(fetchedUser);
+          setUser(normalized);
           setRoles(fetchedRoles || []);
           setCustomerProfile(cp);
           setVendorProfile(vp);
           localStorage.setItem('rentora_user', JSON.stringify({
-            user: fetchedUser,
+            user: normalized,
             roles: fetchedRoles,
             customerProfile: cp,
             vendorProfile: vp
@@ -85,8 +97,9 @@ export function AuthProvider({ children }) {
       });
 
       const { user: loggedInUser, roles: userRoles, customerProfile: cp, vendorProfile: vp, accessToken: token, refreshToken } = response.data.data;
+      const normalized = normalizeUser(loggedInUser);
 
-      setUser(loggedInUser);
+      setUser(normalized);
       setRoles(userRoles || []);
       setCustomerProfile(cp);
       setVendorProfile(vp);
@@ -97,7 +110,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('rentora_refresh_token', refreshToken);
       }
       localStorage.setItem('rentora_user', JSON.stringify({
-        user: loggedInUser,
+        user: normalized,
         roles: userRoles,
         customerProfile: cp,
         vendorProfile: vp
@@ -111,7 +124,7 @@ export function AuthProvider({ children }) {
 
       return {
         success: true,
-        user: loggedInUser,
+        user: normalized,
         roles: userRoles,
         primaryRole: primary
       };
@@ -130,8 +143,9 @@ export function AuthProvider({ children }) {
       const response = await api.post('/auth/register', userData);
 
       const { user: registeredUser, roles: userRoles, customerProfile: cp, vendorProfile: vp, accessToken: token, refreshToken } = response.data.data;
+      const normalized = normalizeUser(registeredUser);
 
-      setUser(registeredUser);
+      setUser(normalized);
       setRoles(userRoles || []);
       setCustomerProfile(cp);
       setVendorProfile(vp);
@@ -142,7 +156,7 @@ export function AuthProvider({ children }) {
         localStorage.setItem('rentora_refresh_token', refreshToken);
       }
       localStorage.setItem('rentora_user', JSON.stringify({
-        user: registeredUser,
+        user: normalized,
         roles: userRoles,
         customerProfile: cp,
         vendorProfile: vp
@@ -152,7 +166,7 @@ export function AuthProvider({ children }) {
 
       return {
         success: true,
-        user: registeredUser,
+        user: normalized,
         roles: userRoles,
         primaryRole: primary
       };

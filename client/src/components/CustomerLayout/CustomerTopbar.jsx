@@ -156,13 +156,13 @@ export default function CustomerTopbar({ onOpenSidebar }) {
             aria-label="User profile menu"
           >
             <img 
-              src={user?.avatar || CUSTOMER_PROFILE.avatar} 
-              alt={user?.name || CUSTOMER_PROFILE.name} 
+              src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'} 
+              alt={user?.fullName || user?.name || 'Customer'} 
               className="topbar-user-avatar"
             />
             <div className="topbar-user-meta">
-              <span className="topbar-user-name">{user?.name || CUSTOMER_PROFILE.name}</span>
-              <span className="topbar-user-role">Prime Member</span>
+              <span className="topbar-user-name">{user?.fullName || user?.name || 'Customer'}</span>
+              <span className="topbar-user-role">Customer Account</span>
             </div>
             <ChevronDown size={16} className="topbar-chevron" />
           </button>
@@ -170,8 +170,8 @@ export default function CustomerTopbar({ onOpenSidebar }) {
           {profileDropdownOpen && (
             <div className="topbar-dropdown-menu profile-menu">
               <div className="dropdown-profile-header">
-                <div className="profile-hdr-name">{user?.name || CUSTOMER_PROFILE.name}</div>
-                <div className="profile-hdr-email">{user?.email || CUSTOMER_PROFILE.email}</div>
+                <div className="profile-hdr-name">{user?.fullName || user?.name || 'Customer'}</div>
+                <div className="profile-hdr-email">{user?.email || 'customer@rentora.in'}</div>
                 <div className="profile-hdr-badge">
                   <ShieldCheck size={13} />
                   <span>KYC Verified</span>

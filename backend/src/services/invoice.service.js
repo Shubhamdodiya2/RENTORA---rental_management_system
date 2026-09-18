@@ -450,9 +450,16 @@ class InvoiceService {
   }
 
   /**
-   * Retrieve Single Invoice by ID with Strict RBAC & Ownership Validation
+   * Retrieve Single Invoice by ID (UUID) with Strict RBAC & Ownership Validation
    */
   static async getInvoiceById(invoiceId, user, roles = []) {
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(invoiceId);
+
+    // If identifier is not a UUID, delegate to getInvoiceByNumber
+    if (!isUUID) {
+      return this.getInvoiceByNumber(invoiceId, user, roles);
+    }
+
     const invoice = await Invoice.findByPk(invoiceId, {
       include: [
         {
@@ -484,6 +491,116 @@ class InvoiceService {
 
     if (!invoice) {
       const err = new Error('Invoice not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    // Role-based Ownership Checks
+    const userRoleNames = (roles && roles.length > 0)
+      ? roles
+      : ((user && user.roles) ? user.roles.map(r => typeof r === 'string' ? r : r.name) : []);
+
+    const isAdmin = userRoleNames.includes(ROLES.SUPER_ADMIN);
+    const isCustomer = user && invoice.customerId === user.id;
+
+    let isVendor = false;
+    if (user && user.vendorProfile && user.vendorProfile.id === invoice.vendorId) {
+      isVendor = true;
+    } else if (user) {
+      const vendorProf = await VendorProfile.findOne({ where: { userId: user.id } });
+      if (vendorProf && vendorProf.id === invoice.vendorId) {
+        isVendor = true;
+      }
+    }
+
+    if (!isAdmin && !isCustomer && !isVendor) {
+      const err = new Error('Forbidden: You do not have permission to view this invoice');
+      err.statusCode = 403;
+      throw err;
+    }
+
+    return invoice;
+  }
+
+  /**
+   * Retrieve Single Invoice by Invoice Number (e.g. INV-2026-000001 or REN-...)
+   */
+  static async getInvoiceByNumber(invoiceNumber, user, roles = []) {
+    const trimmed = (invoiceNumber || '').trim();
+
+    let invoice = await Invoice.findOne({
+      where: {
+        [Op.or]: [
+          { invoiceNumber: trimmed },
+          { orderId: trimmed }
+        ]
+      },
+      include: [
+        {
+          model: Booking,
+          as: 'booking',
+          include: [{ model: BookingItem, as: 'items', include: [{ model: Product, as: 'product' }] }]
+        },
+        {
+          model: Order,
+          as: 'order'
+        },
+        {
+          model: User,
+          as: 'customer',
+          attributes: ['id', 'fullName', 'email', 'phone']
+        },
+        {
+          model: VendorProfile,
+          as: 'vendor',
+          attributes: ['id', 'businessName', 'businessAddress', 'city', 'state', 'gstNumber']
+        },
+        {
+          model: User,
+          as: 'verifier',
+          attributes: ['id', 'fullName', 'email']
+        }
+      ]
+    });
+
+    // If not found by invoiceNumber or orderId, check if it matches a booking's bookingNumber
+    if (!invoice) {
+      const booking = await Booking.findOne({ where: { bookingNumber: trimmed } });
+      if (booking) {
+        invoice = await Invoice.findOne({
+          where: { bookingId: booking.id },
+          include: [
+            {
+              model: Booking,
+              as: 'booking',
+              include: [{ model: BookingItem, as: 'items', include: [{ model: Product, as: 'product' }] }]
+            },
+            {
+              model: Order,
+              as: 'order'
+            },
+            {
+              model: User,
+              as: 'customer',
+              attributes: ['id', 'fullName', 'email', 'phone']
+            },
+            {
+              model: VendorProfile,
+              as: 'vendor',
+              attributes: ['id', 'businessName', 'businessAddress', 'city', 'state', 'gstNumber']
+            },
+            {
+              model: User,
+              as: 'verifier',
+              attributes: ['id', 'fullName', 'email']
+            }
+          ]
+        });
+      }
+    }
+
+    if (!invoice) {
+      const err = new Error(`Invoice not found for number: ${trimmed}`);
       err.statusCode = 404;
       throw err;
     }

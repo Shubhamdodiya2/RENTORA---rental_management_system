@@ -16,18 +16,24 @@ import {
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
 import { useBooking } from '../../context/BookingContext';
+import { useAuth } from '../../context/AuthContext';
 import './Booking.css';
 
 export default function BookingSuccess() {
   const navigate = useNavigate();
   const { confirmedBooking, bookingDraft } = useBooking();
+  const { user } = useAuth();
 
-  const booking = confirmedBooking || {
+  const savedBooking = typeof window !== 'undefined' && sessionStorage.getItem('rentora_confirmed_booking')
+    ? JSON.parse(sessionStorage.getItem('rentora_confirmed_booking'))
+    : null;
+
+  const booking = confirmedBooking || savedBooking || {
     orderNumber: 'REN-' + Math.floor(100000 + Math.random() * 900000),
     product: bookingDraft.product,
-    customerName: 'Aarav Patel',
-    customerEmail: 'aarav.creator@rentora.in',
-    customerPhone: '+91 98250 12345',
+    customerName: user?.fullName || user?.name || 'Valued Customer',
+    customerEmail: user?.email || 'customer@rentora.in',
+    customerPhone: user?.phone || '+91 98250 12345',
     deliveryAddress: '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015',
     deliveryType: 'doorstep',
     startDate: '2026-09-18',
@@ -41,7 +47,7 @@ export default function BookingSuccess() {
     totalPayable: 6497,
     paymentPlan: 'full',
     paymentMethod: 'upi',
-    bookingDate: '16 Sep 2026'
+    bookingDate: '18 Sep 2026'
   };
 
   return (

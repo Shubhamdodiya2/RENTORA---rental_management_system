@@ -273,7 +273,7 @@ export default function Login() {
         {role !== 'admin' ? (
           <div className="text-center pt-2 border-t border-gray-100 text-xs text-[#457B9D]">
             Don't have an account yet?{' '}
-            <Link to="/signup" className="font-bold text-[#E63946] hover:underline">
+            <Link to="/signup" state={location.state} className="font-bold text-[#E63946] hover:underline">
               Create an Account
             </Link>
           </div>

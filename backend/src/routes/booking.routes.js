@@ -15,8 +15,9 @@ router.use(authenticate);
 // POST /api/v1/bookings - Customer initiates rental checkout
 router.post('/', isCustomer, BookingController.createBooking);
 
-// GET /api/v1/bookings - List customer's own bookings (Customer-only)
+// GET /api/v1/bookings & /api/v1/bookings/my - List customer's own bookings (Customer-only)
 router.get('/', isCustomer, BookingController.getCustomerBookings);
+router.get('/my', isCustomer, BookingController.getCustomerBookings);
 
 // GET /api/v1/bookings/:id - Single booking details with timeline & items (Customer owner, store vendor, or Super Admin)
 router.get('/:id', BookingController.getBookingById);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShieldCheck, 
@@ -29,19 +29,33 @@ export default function Checkout() {
   const product = bookingDraft.product;
 
   // Form State
-  const [customerName, setCustomerName] = useState(user?.name || 'Aarav Patel');
-  const [customerEmail, setCustomerEmail] = useState(user?.email || 'aarav.creator@rentora.in');
-  const [customerPhone, setCustomerPhone] = useState(user?.phone || '+91 98250 12345');
+  const [customerName, setCustomerName] = useState(() => user?.fullName || user?.name || '');
+  const [customerEmail, setCustomerEmail] = useState(() => user?.email || '');
+  const [customerPhone, setCustomerPhone] = useState(() => user?.phone || '');
   const [deliveryAddress, setDeliveryAddress] = useState(bookingDraft.deliveryAddress || '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015');
   const [rentalNotes, setRentalNotes] = useState('');
   const [paymentPlan, setPaymentPlan] = useState('full'); // 'full' | 'deposit_only' | 'pay_on_delivery'
   const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'netbanking'
-  const [upiId, setUpiId] = useState('aarav@okhdfcbank');
+  const [upiId, setUpiId] = useState(() => (user?.email ? `${user.email.split('@')[0]}@okhdfcbank` : 'customer@okhdfcbank'));
   const [couponCode, setCouponCode] = useState('');
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (!customerName || customerName === 'Aarav Patel') {
+        setCustomerName(user.fullName || user.name || '');
+      }
+      if (!customerEmail || customerEmail === 'aarav.creator@rentora.in') {
+        setCustomerEmail(user.email || '');
+      }
+      if (!customerPhone || customerPhone === '+91 98250 12345') {
+        setCustomerPhone(user.phone || '');
+      }
+    }
+  }, [user]);
 
   const { subtotal, deposit, deliveryFee, total } = calculateTotal();
   const finalTotal = Math.max(0, total - appliedDiscount);
@@ -70,10 +84,10 @@ export default function Checkout() {
       const confirmedData = {
         orderNumber,
         product,
-        customerName,
-        customerEmail,
-        customerPhone,
-        deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : product.vendor.address,
+        customerName: customerName || user?.fullName || user?.name || 'Customer',
+        customerEmail: customerEmail || user?.email || 'customer@rentora.in',
+        customerPhone: customerPhone || user?.phone || '+91 98250 12345',
+        deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : (product.vendor?.address || 'Store Pickup'),
         deliveryType: bookingDraft.deliveryType,
         startDate: bookingDraft.startDate,
         endDate: bookingDraft.endDate,
@@ -92,7 +106,7 @@ export default function Checkout() {
       setConfirmedBooking(confirmedData);
       setIsProcessing(false);
       navigate('/booking/success');
-    }, 1500);
+    }, 1200);
   };
 
   if (!product) {

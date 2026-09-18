@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "message": "User profile retrieved successfully",
+  "data": {
+    "user": {
+      "id": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+      "fullName": "Pooja Deshmukh",
+      "email": "pooja.qa.1789713049215@rentora-test.in",
+      "phone": "9123476348",
+      "avatarUrl": null,
+      "isActive": true,
+      "isVerified": false,
+      "mustChangePassword": false,
+      "lastLoginAt": null,
+      "createdAt": "2026-09-18T06:30:58.000Z",
+      "updatedAt": "2026-09-18T06:30:58.000Z",
+      "roles": [
+        {
+          "id": 1,
+          "name": "CUSTOMER",
+          "UserRole": {
+            "id": 120,
+            "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+            "roleId": 1,
+            "isActive": true,
+            "createdAt": "2026-09-18T06:30:58.000Z",
+            "updatedAt": "2026-09-18T06:30:58.000Z"
+          }
+        }
+      ],
+      "customerProfile": {
+        "id": "e0b1f97c-27b8-4ea9-86b4-b9bed318fd3a",
+        "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+        "address": null,
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "pincode": null,
+        "kycStatus": "Pending",
+        "kycBadge": "Standard Member",
+        "trustScore": 100,
+        "createdAt": "2026-09-18T06:30:58.000Z",
+        "updatedAt": "2026-09-18T06:30:58.000Z"
+      },
+      "vendorProfile": null
+    },
+    "roles": [
+      "CUSTOMER"
+    ],
+    "customerProfile": {
+      "id": "e0b1f97c-27b8-4ea9-86b4-b9bed318fd3a",
+      "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+      "address": null,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "pincode": null,
+      "kycStatus": "Pending",
+      "kycBadge": "Standard Member",
+      "trustScore": 100,
+      "createdAt": "2026-09-18T06:30:58.000Z",
+      "updatedAt": "2026-09-18T06:30:58.000Z"
+    },
+    "vendorProfile": null
+  },
+  "errors": null
+}

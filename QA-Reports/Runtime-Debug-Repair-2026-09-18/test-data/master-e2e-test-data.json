@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-09-18T06:29:42.846Z",
+  "customerA": {
+    "fullName": "Vikramaditya Sharma",
+    "email": "vikram.qa.1789712997954@rentora-test.in",
+    "phone": "9876517396",
+    "password": "Password@123",
+    "role": "Customer"
+  },
+  "customerB": {
+    "fullName": "Pooja Deshmukh",
+    "email": "pooja.qa.1789713049215@rentora-test.in",
+    "phone": "9123476348",
+    "password": "Password@123",
+    "role": "Customer"
+  },
+  "bookingA": null,
+  "invoiceA": null,
+  "stepResults": [
+    {
+      "step": 1,
+      "title": "Guest product browsing",
+      "status": "PASS",
+      "screenshot": "D:\\rentora\\QA-Reports\\Runtime-Debug-Repair-2026-09-18\\screenshots\\01-guest-product.png"
+    },
+    {
+      "step": 2,
+      "title": "Rent -> Login required redirect",
+      "status": "PASS",
+      "screenshot": "D:\\rentora\\QA-Reports\\Runtime-Debug-Repair-2026-09-18\\screenshots\\02-rent-login-required.png",
+      "url": "http://localhost:5173/login"
+    }
+  ]
+}

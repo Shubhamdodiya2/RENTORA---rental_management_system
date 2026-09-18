@@ -56,6 +56,18 @@ async function getInvoiceById(req, res, next) {
 }
 
 /**
+ * Get Specific Invoice by Invoice Number / Business Ref (Protected with RBAC & Ownership)
+ */
+async function getInvoiceByNumber(req, res, next) {
+  try {
+    const invoice = await InvoiceService.getInvoiceByNumber(req.params.invoiceNumber, req.user);
+    return ApiResponse.success(res, 'Invoice details retrieved successfully', invoice);
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
  * Get Specific Invoice by Booking ID
  */
 async function getInvoiceByBookingId(req, res, next) {
@@ -72,7 +84,8 @@ async function getInvoiceByBookingId(req, res, next) {
  */
 async function renderInvoiceHtml(req, res, next) {
   try {
-    const html = await InvoiceService.renderInvoiceHtml(req.params.id, req.user);
+    const identifier = req.params.id || req.params.invoiceNumber;
+    const html = await InvoiceService.renderInvoiceHtml(identifier, req.user);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(html);
   } catch (error) {
@@ -96,6 +109,7 @@ module.exports = {
   getMyInvoices,
   getVendorInvoices,
   getInvoiceById,
+  getInvoiceByNumber,
   getInvoiceByBookingId,
   renderInvoiceHtml,
   generateBookingInvoice

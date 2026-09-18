@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Mail,
@@ -12,23 +12,37 @@ import {
   Calendar,
   Package
 } from 'lucide-react';
-import { CUSTOMER_PROFILE } from '../../../data/customerMockData';
 import { useAuth } from '../../../context/AuthContext';
 import './Profile.css';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, customerProfile } = useAuth();
   const [formData, setFormData] = useState({
-    name: user?.name || CUSTOMER_PROFILE.name,
-    email: user?.email || CUSTOMER_PROFILE.email,
-    phone: CUSTOMER_PROFILE.phone,
-    address: CUSTOMER_PROFILE.address,
-    city: CUSTOMER_PROFILE.city,
-    state: CUSTOMER_PROFILE.state,
-    pincode: '380015'
+    name: user?.fullName || user?.name || 'Customer',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    address: customerProfile?.address || '402, Shivalik Highstreet, Bodakdev',
+    city: customerProfile?.city || 'Ahmedabad',
+    state: customerProfile?.state || 'Gujarat',
+    pincode: customerProfile?.pincode || '380015'
   });
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.fullName || user.name || prev.name,
+        email: user.email || prev.email,
+        phone: user.phone || prev.phone,
+        address: customerProfile?.address || prev.address,
+        city: customerProfile?.city || prev.city,
+        state: customerProfile?.state || prev.state,
+        pincode: customerProfile?.pincode || prev.pincode
+      }));
+    }
+  }, [user, customerProfile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

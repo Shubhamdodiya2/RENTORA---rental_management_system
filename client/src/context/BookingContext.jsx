@@ -7,30 +7,70 @@ export function BookingProvider({ children }) {
   // Default draft booking
   const defaultProduct = FEATURED_PRODUCTS[0]; // Sony FX3 default
 
-  const [bookingDraft, setBookingDraft] = useState({
-    product: defaultProduct,
-    durationMode: 'day', // 'hour' | 'day' | 'week' | 'month' | 'year'
-    startDate: '2026-09-18',
-    endDate: '2026-09-20',
-    durationCount: 2, // 2 days
-    quantity: 1,
-    deliveryType: 'doorstep', // 'doorstep' | 'store_pickup'
-    deliveryAddress: '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015',
-    pickupTime: '10:00 AM',
-    returnTime: '06:00 PM',
-    paymentPlan: 'full', // 'full' | 'deposit_only' | 'pay_on_delivery'
-    couponCode: '',
-    discount: 0,
-    rentalNotes: ''
+  const [bookingDraft, setBookingDraft] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('rentora_booking_draft');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.product) return parsed;
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+    return {
+      product: defaultProduct,
+      durationMode: 'day', // 'hour' | 'day' | 'week' | 'month' | 'year'
+      startDate: '2026-09-18',
+      endDate: '2026-09-20',
+      durationCount: 2, // 2 days
+      quantity: 1,
+      deliveryType: 'doorstep', // 'doorstep' | 'store_pickup'
+      deliveryAddress: '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015',
+      pickupTime: '10:00 AM',
+      returnTime: '06:00 PM',
+      paymentPlan: 'full', // 'full' | 'deposit_only' | 'pay_on_delivery'
+      couponCode: '',
+      discount: 0,
+      rentalNotes: ''
+    };
   });
 
-  const [confirmedBooking, setConfirmedBooking] = useState(null);
+  const [confirmedBooking, setConfirmedBookingState] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('rentora_confirmed_booking');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return null;
+  });
+
+  const setConfirmedBooking = (bookingData) => {
+    setConfirmedBookingState(bookingData);
+    if (bookingData) {
+      try {
+        sessionStorage.setItem('rentora_confirmed_booking', JSON.stringify(bookingData));
+      } catch {
+        // ignore
+      }
+    } else {
+      sessionStorage.removeItem('rentora_confirmed_booking');
+    }
+  };
 
   const updateBookingDraft = (updates) => {
-    setBookingDraft((prev) => ({
-      ...prev,
-      ...updates
-    }));
+    setBookingDraft((prev) => {
+      const nextDraft = {
+        ...prev,
+        ...updates
+      };
+      try {
+        sessionStorage.setItem('rentora_booking_draft', JSON.stringify(nextDraft));
+      } catch {
+        // ignore storage error
+      }
+      return nextDraft;
+    });
   };
 
   const calculateTotal = () => {

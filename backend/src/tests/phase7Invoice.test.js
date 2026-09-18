@@ -396,13 +396,14 @@ async function runPhase7Tests() {
     assert(customerAdminAccessRes.status === 403, 'Customer attempting to access admin invoices returns 403 Forbidden');
 
     // ---------------------------------------------------------
-    // 11. Standalone A4 HTML Printable Invoice Engine
+    // 11. Standalone A4 HTML Printable Invoice Engine & Number Lookups
     // ---------------------------------------------------------
+    // A4 HTML via UUID
     const htmlRes = await request(app)
       .get(`/api/v1/invoices/${invoice1.id}/html`)
       .set('Authorization', `Bearer ${customerAToken}`);
 
-    assert(htmlRes.status === 200, 'A4 HTML invoice template rendered successfully');
+    assert(htmlRes.status === 200, 'A4 HTML invoice template rendered successfully via UUID');
     assert(htmlRes.headers['content-type'].includes('text/html'), 'Response content type is text/html');
     assert(htmlRes.text.includes(invoice1.invoiceNumber), 'Rendered HTML includes exact invoice number');
     assert(htmlRes.text.includes('@page') && htmlRes.text.includes('size: A4 portrait;'), 'Rendered HTML contains A4 portrait print stylesheet');
@@ -410,6 +411,37 @@ async function runPhase7Tests() {
     assert(htmlRes.text.includes('SGST (9%)'), 'Rendered HTML contains SGST (9%) breakdown');
     assert(htmlRes.text.includes('Refundable Security Deposit'), 'Rendered HTML contains isolated security deposit section');
     assert(htmlRes.text.includes('PAID & VERIFIED'), 'Rendered HTML contains verified badge');
+
+    // Number Route: GET /api/v1/invoices/number/:invoiceNumber
+    const numLookupRes = await request(app)
+      .get(`/api/v1/invoices/number/${invoice1.invoiceNumber}`)
+      .set('Authorization', `Bearer ${customerAToken}`);
+    assert(numLookupRes.status === 200, 'Invoice looked up successfully by invoice number route');
+    assert(numLookupRes.body.data.id === invoice1.id, 'Number route returned exact invoice record');
+
+    // Fallback: GET /api/v1/invoices/:invoiceNumber
+    const directNumRes = await request(app)
+      .get(`/api/v1/invoices/${invoice1.invoiceNumber}`)
+      .set('Authorization', `Bearer ${customerAToken}`);
+    assert(directNumRes.status === 200, 'Invoice looked up successfully via /:id with invoice number');
+    assert(directNumRes.body.data.id === invoice1.id, 'Direct number lookup returned exact invoice record');
+
+    // A4 HTML via Invoice Number
+    const htmlNumRes = await request(app)
+      .get(`/api/v1/invoices/number/${invoice1.invoiceNumber}/html`)
+      .set('Authorization', `Bearer ${customerAToken}`);
+    assert(htmlNumRes.status === 200, 'A4 HTML invoice rendered successfully via invoice number');
+
+    // Non-existent invoice returns 404 cleanly
+    const notFoundRes = await request(app)
+      .get('/api/v1/invoices/number/INV-9999-NONEXISTENT')
+      .set('Authorization', `Bearer ${customerAToken}`);
+    assert(notFoundRes.status === 404, 'Non-existent invoice number returns 404 cleanly');
+
+    const notFoundUuidRes = await request(app)
+      .get('/api/v1/invoices/00000000-0000-4000-8000-000000000000')
+      .set('Authorization', `Bearer ${customerAToken}`);
+    assert(notFoundUuidRes.status === 404, 'Non-existent invoice UUID returns 404 cleanly');
 
     // Clean up temporary dummy proof file
     if (fs.existsSync(dummyProofPath)) fs.unlinkSync(dummyProofPath);

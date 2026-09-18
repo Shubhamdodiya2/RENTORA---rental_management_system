@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "message": "User profile retrieved successfully",
+  "data": {
+    "user": {
+      "id": "592db094-71c1-4ff9-8376-ec7fd275e093",
+      "fullName": "Vikramaditya Sharma",
+      "email": "vikram.qa.1789712997954@rentora-test.in",
+      "phone": "9876517396",
+      "avatarUrl": null,
+      "isActive": true,
+      "isVerified": false,
+      "mustChangePassword": false,
+      "lastLoginAt": null,
+      "createdAt": "2026-09-18T06:30:03.000Z",
+      "updatedAt": "2026-09-18T06:30:03.000Z",
+      "roles": [
+        {
+          "id": 1,
+          "name": "CUSTOMER",
+          "UserRole": {
+            "id": 119,
+            "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+            "roleId": 1,
+            "isActive": true,
+            "createdAt": "2026-09-18T06:30:03.000Z",
+            "updatedAt": "2026-09-18T06:30:03.000Z"
+          }
+        }
+      ],
+      "customerProfile": {
+        "id": "94c2bc90-23ca-46ec-94b9-459126d35f99",
+        "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+        "address": null,
+        "city": "Ahmedabad",
+        "state": "Gujarat",
+        "pincode": null,
+        "kycStatus": "Pending",
+        "kycBadge": "Standard Member",
+        "trustScore": 100,
+        "createdAt": "2026-09-18T06:30:03.000Z",
+        "updatedAt": "2026-09-18T06:30:03.000Z"
+      },
+      "vendorProfile": null
+    },
+    "roles": [
+      "CUSTOMER"
+    ],
+    "customerProfile": {
+      "id": "94c2bc90-23ca-46ec-94b9-459126d35f99",
+      "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+      "address": null,
+      "city": "Ahmedabad",
+      "state": "Gujarat",
+      "pincode": null,
+      "kycStatus": "Pending",
+      "kycBadge": "Standard Member",
+      "trustScore": 100,
+      "createdAt": "2026-09-18T06:30:03.000Z",
+      "updatedAt": "2026-09-18T06:30:03.000Z"
+    },
+    "vendorProfile": null
+  },
+  "errors": null
+}

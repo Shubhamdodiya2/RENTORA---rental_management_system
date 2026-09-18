@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Package,
@@ -35,19 +35,86 @@ export default function DashboardOverview() {
   const { user } = useAuth();
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [activeRentalDetail, setActiveRentalDetail] = useState(null);
+  const [liveBookings, setLiveBookings] = useState([]);
+  const [liveInvoices, setLiveInvoices] = useState([]);
+  const [hasFetched, setHasFetched] = useState(false);
 
-  const customerName = user?.name || CUSTOMER_PROFILE.name;
-  const firstName = customerName.split(' ')[0] || 'Alex';
+  const customerName = user?.fullName || user?.name || 'Customer';
+  const firstName = customerName.split(' ')[0] || 'Customer';
 
-  // Active rentals
-  const activeRentals = CUSTOMER_RENTALS.filter(
-    (r) => r.rentalStatus === 'Active' || r.rentalStatus === 'Return Scheduled'
+  useEffect(() => {
+    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    if (token) {
+      Promise.all([
+        fetch('/api/v1/bookings/my', { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => r.json())
+          .catch(() => null),
+        fetch('/api/v1/invoices/my', { headers: { Authorization: `Bearer ${token}` } })
+          .then((r) => r.json())
+          .catch(() => null)
+      ]).then(([bRes, iRes]) => {
+        if (bRes && bRes.success && Array.isArray(bRes.data)) {
+          setLiveBookings(bRes.data);
+        }
+        if (iRes && iRes.success && Array.isArray(iRes.data)) {
+          setLiveInvoices(iRes.data);
+        }
+        setHasFetched(true);
+      });
+    } else {
+      setHasFetched(true);
+    }
+  }, [user]);
+
+  // Derived metrics
+  const isNewCustomer = hasFetched && user && liveBookings.length === 0;
+
+  const displayBookings = liveBookings.length > 0
+    ? liveBookings.map((b) => ({
+        id: b.id,
+        orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
+        title: b.items && b.items[0] ? (b.items[0].product ? b.items[0].product.name : 'Rental Gear') : 'Rental Gear',
+        image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || FEATURED_PRODUCTS[0].images[0]) : FEATURED_PRODUCTS[0].images[0],
+        vendor: {
+          id: b.vendorId,
+          name: b.vendor ? b.vendor.businessName : 'Rentora Store',
+          city: b.vendor ? b.vendor.city : 'Ahmedabad'
+        },
+        startDate: b.startDate,
+        endDate: b.endDate,
+        durationDays: b.totalRentalDays || 2,
+        rentalAmount: Number(b.rentalSubtotal || 0),
+        securityDeposit: Number(b.securityDeposit || 0),
+        totalPaid: Number(b.totalPayable || 0),
+        paymentStatus: b.paymentStatus || 'Pending',
+        rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : b.status,
+        daysRemaining: 2,
+        currentStep: 1,
+        rawBooking: b
+      }))
+    : isNewCustomer
+    ? []
+    : CUSTOMER_RENTALS;
+
+  const activeRentals = displayBookings.filter(
+    (r) => r.rentalStatus === 'Active' || r.rentalStatus === 'BOOKING_CONFIRMED' || r.rentalStatus === 'Return Scheduled'
   );
 
-  // Upcoming returns (due soon)
-  const upcomingReturns = CUSTOMER_RENTALS.filter(
+  const upcomingReturns = displayBookings.filter(
     (r) => r.daysRemaining > 0 && r.daysRemaining <= 2
   );
+
+  const totalSpent = isNewCustomer
+    ? 0
+    : liveInvoices.length > 0
+    ? liveInvoices.reduce((acc, inv) => acc + Number(inv.totalAmount || 0), 0)
+    : 24850;
+
+  const escrowDeposit = isNewCustomer
+    ? 0
+    : liveBookings.length > 0
+    ? liveBookings.reduce((acc, b) => acc + Number(b.securityDeposit || 0), 0)
+    : 9000;
 
   const maxSpend = Math.max(...SPENDING_CHART_DATA.map((d) => d.amount));
 
@@ -78,7 +145,7 @@ export default function DashboardOverview() {
         <div className="welcome-graphic">
           <div className="escrow-pill">
             <span className="escrow-label">Security Deposit in Escrow</span>
-            <span className="escrow-val">{CUSTOMER_METRICS.activeDepositInEscrow}</span>
+            <span className="escrow-val">₹{escrowDeposit.toLocaleString('en-IN')}</span>
             <span className="escrow-sub">100% Protected by Rentora SafePay</span>
           </div>
         </div>
@@ -93,9 +160,9 @@ export default function DashboardOverview() {
               <Package size={22} className="text-primary-red" />
             </div>
           </div>
-          <div className="metric-value">{CUSTOMER_METRICS.activeRentals}</div>
+          <div className="metric-value">{activeRentals.length}</div>
           <div className="metric-footer">
-            <span className="metric-footer-text text-emerald-600 font-medium">3 items in custody</span>
+            <span className="metric-footer-text text-emerald-600 font-medium">{activeRentals.length} items in custody</span>
             <Link to="/customer/rentals" className="metric-link">Manage &rarr;</Link>
           </div>
         </div>
@@ -107,7 +174,7 @@ export default function DashboardOverview() {
               <CalendarClock size={22} className="text-amber-600" />
             </div>
           </div>
-          <div className="metric-value">{CUSTOMER_METRICS.upcomingReturns}</div>
+          <div className="metric-value">{upcomingReturns.length}</div>
           <div className="metric-footer">
             <span className="metric-footer-text text-amber-600 font-medium">Due in &le; 48 hours</span>
             <Link to="/customer/pickup-returns" className="metric-link">Schedules &rarr;</Link>
@@ -121,7 +188,7 @@ export default function DashboardOverview() {
               <CalendarCheck size={22} className="text-navy" />
             </div>
           </div>
-          <div className="metric-value">{CUSTOMER_METRICS.totalBookings}</div>
+          <div className="metric-value">{displayBookings.length}</div>
           <div className="metric-footer">
             <span className="metric-footer-text text-slate-500">100% On-time returns</span>
             <Link to="/customer/bookings" className="metric-link">History &rarr;</Link>
@@ -135,9 +202,9 @@ export default function DashboardOverview() {
               <Wallet size={22} className="text-secondary-blue" />
             </div>
           </div>
-          <div className="metric-value">{CUSTOMER_METRICS.totalSpending}</div>
+          <div className="metric-value">₹{totalSpent.toLocaleString('en-IN')}</div>
           <div className="metric-footer">
-            <span className="metric-footer-text text-emerald-600 font-medium">+₹6,497 this month</span>
+            <span className="metric-footer-text text-emerald-600 font-medium">Verified Ledger</span>
             <Link to="/customer/payments" className="metric-link">Ledger &rarr;</Link>
           </div>
         </div>
@@ -154,59 +221,70 @@ export default function DashboardOverview() {
                 <p className="section-card-sub">Active rental gear under your subscription and custody</p>
               </div>
               <Link to="/customer/rentals" className="section-link">
-                <span>View All ({CUSTOMER_RENTALS.length})</span>
+                <span>View All ({activeRentals.length})</span>
                 <ChevronRight size={16} />
               </Link>
             </div>
 
             <div className="active-rentals-list">
-              {activeRentals.map((rental) => (
-                <div key={rental.id} className="active-rental-item">
-                  <img src={rental.image} alt={rental.title} className="active-rental-thumb" />
-                  <div className="active-rental-details">
-                    <div className="rental-top-row">
-                      <span className="rental-order-id">{rental.orderId}</span>
-                      <RentalStatusBadge status={rental.rentalStatus} />
-                    </div>
-                    <h3 className="active-rental-name">{rental.title}</h3>
-                    <div className="active-rental-vendor">
-                      <span>Vendor: <strong>{rental.vendor.name}</strong> ({rental.vendor.city})</span>
-                    </div>
-
-                    <div className="rental-dates-strip">
-                      <div className="rental-date-item">
-                        <span className="date-lbl">Start:</span>
-                        <span className="date-val">{rental.startDate}</span>
-                      </div>
-                      <div className="date-arrow">&rarr;</div>
-                      <div className="rental-date-item">
-                        <span className="date-lbl">Return:</span>
-                        <span className="date-val">{rental.endDate}</span>
-                      </div>
-                      <div className="rental-amount-pill">
-                        ₹{rental.rentalAmount.toLocaleString('en-IN')} / {rental.durationDays}d
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="active-rental-actions">
-                    <button
-                      onClick={() => setSelectedDoc({ type: 'invoice', id: rental.orderId })}
-                      className="btn-doc-link"
-                    >
-                      <FileText size={15} />
-                      <span>Invoice</span>
-                    </button>
-                    <Link
-                      to="/customer/rentals"
-                      className="btn-details-link"
-                    >
-                      <Eye size={15} />
-                      <span>Details</span>
-                    </Link>
-                  </div>
+              {activeRentals.length === 0 ? (
+                <div className="text-center py-8 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <Package size={36} className="mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm font-bold text-[#1D3557]">No active rentals currently</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Explore our marketplace catalog to rent cameras, drones, laptops and more.</p>
+                  <Link to="/products" className="inline-block mt-3 px-4 py-2 bg-[#E63946] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-[#D62839]">
+                    Browse Catalog
+                  </Link>
                 </div>
-              ))}
+              ) : (
+                activeRentals.map((rental) => (
+                  <div key={rental.id} className="active-rental-item">
+                    <img src={rental.image} alt={rental.title} className="active-rental-thumb" />
+                    <div className="active-rental-details">
+                      <div className="rental-top-row">
+                        <span className="rental-order-id">{rental.orderId}</span>
+                        <RentalStatusBadge status={rental.rentalStatus} />
+                      </div>
+                      <h3 className="active-rental-name">{rental.title}</h3>
+                      <div className="active-rental-vendor">
+                        <span>Vendor: <strong>{rental.vendor.name}</strong> ({rental.vendor.city})</span>
+                      </div>
+
+                      <div className="rental-dates-strip">
+                        <div className="rental-date-item">
+                          <span className="date-lbl">Start:</span>
+                          <span className="date-val">{rental.startDate}</span>
+                        </div>
+                        <div className="date-arrow">&rarr;</div>
+                        <div className="rental-date-item">
+                          <span className="date-lbl">Return:</span>
+                          <span className="date-val">{rental.endDate}</span>
+                        </div>
+                        <div className="rental-amount-pill">
+                          ₹{rental.rentalAmount.toLocaleString('en-IN')} / {rental.durationDays}d
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="active-rental-actions">
+                      <button
+                        onClick={() => setSelectedDoc({ type: 'invoice', id: rental.orderId, data: rental.rawBooking })}
+                        className="btn-doc-link"
+                      >
+                        <FileText size={15} />
+                        <span>Invoice</span>
+                      </button>
+                      <Link
+                        to="/customer/rentals"
+                        className="btn-details-link"
+                      >
+                        <Eye size={15} />
+                        <span>Details</span>
+                      </Link>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -218,47 +296,55 @@ export default function DashboardOverview() {
                 <p className="section-card-sub">Latest transactions and rental reservations</p>
               </div>
               <Link to="/customer/bookings" className="section-link">
-                <span>All Bookings</span>
+                <span>All Bookings ({displayBookings.length})</span>
                 <ChevronRight size={16} />
               </Link>
             </div>
 
             <div className="table-responsive">
-              <table className="dashboard-table">
-                <thead>
-                  <tr>
-                    <th>Order Ref</th>
-                    <th>Product & Vendor</th>
-                    <th>Rental Dates</th>
-                    <th>Total</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CUSTOMER_RENTALS.slice(0, 4).map((b) => (
-                    <tr key={b.id}>
-                      <td className="font-mono font-semibold text-slate-700">{b.orderId}</td>
-                      <td>
-                        <div className="tbl-product-cell">
-                          <span className="tbl-product-name">{b.title}</span>
-                          <span className="tbl-vendor-name">{b.vendor.name}</span>
-                        </div>
-                      </td>
-                      <td className="text-sm text-slate-600">{b.startDate} - {b.endDate}</td>
-                      <td className="font-semibold text-navy">₹{b.totalPaid.toLocaleString('en-IN')}</td>
-                      <td>
-                        <RentalStatusBadge status={b.rentalStatus} size="small" />
-                      </td>
-                      <td>
-                        <Link to="/customer/bookings" className="tbl-action-btn">
-                          View
-                        </Link>
-                      </td>
+              {displayBookings.length === 0 ? (
+                <div className="text-center py-8 px-4 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <CalendarCheck size={36} className="mx-auto text-slate-300 mb-2" />
+                  <p className="text-sm font-bold text-[#1D3557]">No bookings recorded yet</p>
+                  <p className="text-xs text-slate-500 mt-0.5">Your confirmed bookings will appear here in real time.</p>
+                </div>
+              ) : (
+                <table className="dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>Order Ref</th>
+                      <th>Product & Vendor</th>
+                      <th>Rental Dates</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {displayBookings.slice(0, 4).map((b) => (
+                      <tr key={b.id}>
+                        <td className="font-mono font-semibold text-slate-700">{b.orderId}</td>
+                        <td>
+                          <div className="tbl-product-cell">
+                            <span className="tbl-product-name">{b.title}</span>
+                            <span className="tbl-vendor-name">{b.vendor.name}</span>
+                          </div>
+                        </td>
+                        <td className="text-sm text-slate-600">{b.startDate} - {b.endDate}</td>
+                        <td className="font-semibold text-navy">₹{b.totalPaid.toLocaleString('en-IN')}</td>
+                        <td>
+                          <RentalStatusBadge status={b.rentalStatus} size="small" />
+                        </td>
+                        <td>
+                          <Link to="/customer/bookings" className="tbl-action-btn">
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>

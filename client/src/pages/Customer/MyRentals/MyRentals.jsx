@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Filter,
@@ -19,42 +19,106 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { CUSTOMER_RENTALS } from '../../../data/customerMockData';
+import { FEATURED_PRODUCTS } from '../../../data/mockData';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
 import RentalTimeline from '../../../components/CustomerLayout/RentalTimeline';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
+import { useAuth } from '../../../context/AuthContext';
 import './MyRentals.css';
 
 const TABS = ['All', 'Active', 'Return Scheduled', 'Completed', 'Cancelled'];
 
 export default function MyRentals() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedVendor, setSelectedVendor] = useState('All');
   const [selectedRental, setSelectedRental] = useState(null);
   const [docModal, setDocModal] = useState(null); // { type, id }
+  const [rentals, setRentals] = useState([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    if (token) {
+      fetch('/api/v1/bookings/my', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then((res) => res.json())
+        .then((resData) => {
+          if (resData.success && Array.isArray(resData.data)) {
+            if (resData.data.length > 0) {
+              const mapped = resData.data.map((b) => ({
+                id: b.id,
+                orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
+                title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Equipment',
+                category: 'Cameras & Photography',
+                image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || FEATURED_PRODUCTS[0].images[0]) : FEATURED_PRODUCTS[0].images[0],
+                vendor: {
+                  id: b.vendorId,
+                  name: b.vendor ? b.vendor.businessName : 'Rentora Store',
+                  city: b.vendor ? b.vendor.city : 'Ahmedabad',
+                  phone: b.vendor ? b.vendor.businessPhone : '+91 98250 12345',
+                  address: b.vendor ? b.vendor.businessAddress : 'Ahmedabad'
+                },
+                startDate: b.startDate,
+                endDate: b.endDate,
+                durationDays: b.totalRentalDays || 2,
+                pickupTime: '10:00 AM',
+                returnTime: '06:00 PM',
+                handoverType: b.deliveryType === 'doorstep' ? 'Express Doorstep Delivery' : 'Store Self-Pickup',
+                rentalAmount: Number(b.rentalSubtotal || 0),
+                securityDeposit: Number(b.securityDeposit || 0),
+                deliveryFee: Number(b.deliveryFee || 0),
+                discount: Number(b.discountAmount || 0),
+                totalPaid: Number(b.totalPayable || 0),
+                paymentStatus: b.paymentStatus || 'Pending',
+                rentalStatus: b.status === 'BOOKING_CONFIRMED' ? 'Active' : b.status,
+                daysRemaining: 2,
+                currentStep: 2,
+                inspectionNote: 'Sanitized & calibrated before dispatch. Sealed in Pelican hard case.',
+                rawBooking: b
+              }));
+              setRentals(mapped);
+            } else {
+              setRentals([]);
+            }
+          }
+        })
+        .catch(() => {
+          setRentals(CUSTOMER_RENTALS);
+        })
+        .finally(() => setHasLoaded(true));
+    } else {
+      setRentals(CUSTOMER_RENTALS);
+      setHasLoaded(true);
+    }
+  }, [user]);
+
+  const displayList = hasLoaded ? rentals : CUSTOMER_RENTALS;
 
   // Extract unique vendors for filter dropdown
-  const vendors = ['All', ...new Set(CUSTOMER_RENTALS.map((r) => r.vendor.name))];
+  const vendors = ['All', ...new Set(displayList.map((r) => r.vendor?.name).filter(Boolean))];
 
   // Filtering
-  const filteredRentals = CUSTOMER_RENTALS.filter((r) => {
+  const filteredRentals = displayList.filter((r) => {
     // Tab filter
     if (activeTab !== 'All') {
-      if (activeTab === 'Active' && r.rentalStatus !== 'Active') return false;
+      if (activeTab === 'Active' && r.rentalStatus !== 'Active' && r.rentalStatus !== 'BOOKING_CONFIRMED') return false;
       if (activeTab === 'Return Scheduled' && r.rentalStatus !== 'Return Scheduled') return false;
       if (activeTab === 'Completed' && r.rentalStatus !== 'Completed') return false;
       if (activeTab === 'Cancelled' && r.rentalStatus !== 'Cancelled') return false;
     }
 
     // Vendor filter
-    if (selectedVendor !== 'All' && r.vendor.name !== selectedVendor) return false;
+    if (selectedVendor !== 'All' && r.vendor?.name !== selectedVendor) return false;
 
     // Search query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = r.title.toLowerCase().includes(q);
       const matchOrder = r.orderId.toLowerCase().includes(q);
-      const matchVendor = r.vendor.name.toLowerCase().includes(q);
+      const matchVendor = r.vendor?.name ? r.vendor.name.toLowerCase().includes(q) : false;
       return matchTitle || matchOrder || matchVendor;
     }
 
@@ -73,13 +137,13 @@ export default function MyRentals() {
         </div>
         <div className="rentals-stat-capsule">
           <div className="stat-capsule-item">
-            <span className="stat-num">{CUSTOMER_RENTALS.length}</span>
+            <span className="stat-num">{displayList.length}</span>
             <span className="stat-lbl">Total Rentals</span>
           </div>
           <div className="stat-divider" />
           <div className="stat-capsule-item">
             <span className="stat-num text-primary-red">
-              {CUSTOMER_RENTALS.filter((r) => r.rentalStatus === 'Active' || r.rentalStatus === 'Return Scheduled').length}
+              {displayList.filter((r) => r.rentalStatus === 'Active' || r.rentalStatus === 'BOOKING_CONFIRMED' || r.rentalStatus === 'Return Scheduled').length}
             </span>
             <span className="stat-lbl">Active Now</span>
           </div>

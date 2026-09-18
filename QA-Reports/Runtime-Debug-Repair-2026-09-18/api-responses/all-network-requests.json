@@ -1,0 +1,564 @@
+[
+  {
+    "url": "http://localhost:5173/api/v1/auth/register",
+    "status": 201,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer account registered successfully",
+      "data": {
+        "user": {
+          "id": "592db094-71c1-4ff9-8376-ec7fd275e093",
+          "fullName": "Vikramaditya Sharma",
+          "email": "vikram.qa.1789712997954@rentora-test.in",
+          "phone": "9876517396",
+          "isActive": true,
+          "isVerified": false,
+          "mustChangePassword": false,
+          "updatedAt": "2026-09-18T06:30:03.447Z",
+          "createdAt": "2026-09-18T06:30:03.447Z"
+        },
+        "roles": [
+          "CUSTOMER"
+        ],
+        "customerProfile": {
+          "id": "94c2bc90-23ca-46ec-94b9-459126d35f99",
+          "state": "Gujarat",
+          "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+          "city": "Ahmedabad",
+          "kycStatus": "Pending",
+          "kycBadge": "Standard Member",
+          "trustScore": 100,
+          "updatedAt": "2026-09-18T06:30:03.670Z",
+          "createdAt": "2026-09-18T06:30:03.670Z"
+        },
+        "vendorProfile": null,
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU5MmRiMDk0LTcxYzEtNGZmOS04Mzc2LWVjN2ZkMjc1ZTA5MyIsImVtYWlsIjoidmlrcmFtLnFhLjE3ODk3MTI5OTc5NTRAcmVudG9yYS10ZXN0LmluIiwiZnVsbE5hbWUiOiJWaWtyYW1hZGl0eWEgU2hhcm1hIiwicm9sZXMiOlsiQ1VTVE9NRVIiXSwibXVzdENoYW5nZVBhc3N3b3JkIjpmYWxzZSwiaWF0IjoxNzg5NzEzMDAzLCJleHAiOjE3ODk3MTM5MDN9.93e-t0FO9QnSo2JiG-as-pPTSsQqBmN0T-4Bh2fP7Dg",
+        "refreshToken": "9dedbf52a8e21ab61801627c0067e89bccd4c3c20a66507dd42fd0cf02ba859acad3f0aaeff8ee56"
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:04.432Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer bookings retrieved successfully",
+      "data": {
+        "count": 0,
+        "page": 1,
+        "limit": 10,
+        "totalPages": 1,
+        "results": []
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:05.209Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer invoices retrieved successfully",
+      "data": [],
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:05.544Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "User profile retrieved successfully",
+      "data": {
+        "user": {
+          "id": "592db094-71c1-4ff9-8376-ec7fd275e093",
+          "fullName": "Vikramaditya Sharma",
+          "email": "vikram.qa.1789712997954@rentora-test.in",
+          "phone": "9876517396",
+          "avatarUrl": null,
+          "isActive": true,
+          "isVerified": false,
+          "mustChangePassword": false,
+          "lastLoginAt": null,
+          "createdAt": "2026-09-18T06:30:03.000Z",
+          "updatedAt": "2026-09-18T06:30:03.000Z",
+          "roles": [
+            {
+              "id": 1,
+              "name": "CUSTOMER",
+              "UserRole": {
+                "id": 119,
+                "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+                "roleId": 1,
+                "isActive": true,
+                "createdAt": "2026-09-18T06:30:03.000Z",
+                "updatedAt": "2026-09-18T06:30:03.000Z"
+              }
+            }
+          ],
+          "customerProfile": {
+            "id": "94c2bc90-23ca-46ec-94b9-459126d35f99",
+            "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+            "address": null,
+            "city": "Ahmedabad",
+            "state": "Gujarat",
+            "pincode": null,
+            "kycStatus": "Pending",
+            "kycBadge": "Standard Member",
+            "trustScore": 100,
+            "createdAt": "2026-09-18T06:30:03.000Z",
+            "updatedAt": "2026-09-18T06:30:03.000Z"
+          },
+          "vendorProfile": null
+        },
+        "roles": [
+          "CUSTOMER"
+        ],
+        "customerProfile": {
+          "id": "94c2bc90-23ca-46ec-94b9-459126d35f99",
+          "userId": "592db094-71c1-4ff9-8376-ec7fd275e093",
+          "address": null,
+          "city": "Ahmedabad",
+          "state": "Gujarat",
+          "pincode": null,
+          "kycStatus": "Pending",
+          "kycBadge": "Standard Member",
+          "trustScore": 100,
+          "createdAt": "2026-09-18T06:30:03.000Z",
+          "updatedAt": "2026-09-18T06:30:03.000Z"
+        },
+        "vendorProfile": null
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:05.645Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:05.758Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:08.078Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:08.293Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:08.721Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer invoices retrieved successfully",
+      "data": [],
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:08.926Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:08.926Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:09.088Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:09.178Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:09.298Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:13.700Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:13.998Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:17.594Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:17.813Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:26.106Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:26.340Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:26.583Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:26.818Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/number/INV-2026-000001/html",
+    "status": 401,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": false,
+      "message": "Authentication required. No access token provided.",
+      "data": null,
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:31.737Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:36.598Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:36.829Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:37.453Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:37.562Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:37.896Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:38.056Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:38.168Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:38.268Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/register",
+    "status": 201,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer account registered successfully",
+      "data": {
+        "user": {
+          "id": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+          "fullName": "Pooja Deshmukh",
+          "email": "pooja.qa.1789713049215@rentora-test.in",
+          "phone": "9123476348",
+          "isActive": true,
+          "isVerified": false,
+          "mustChangePassword": false,
+          "updatedAt": "2026-09-18T06:30:58.731Z",
+          "createdAt": "2026-09-18T06:30:58.731Z"
+        },
+        "roles": [
+          "CUSTOMER"
+        ],
+        "customerProfile": {
+          "id": "e0b1f97c-27b8-4ea9-86b4-b9bed318fd3a",
+          "state": "Gujarat",
+          "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+          "city": "Ahmedabad",
+          "kycStatus": "Pending",
+          "kycBadge": "Standard Member",
+          "trustScore": 100,
+          "updatedAt": "2026-09-18T06:30:58.857Z",
+          "createdAt": "2026-09-18T06:30:58.857Z"
+        },
+        "vendorProfile": null,
+        "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImU0MGQ3OGMyLTMxNmEtNDcyZS1hYjhhLTIzY2ViMzgyYmViOSIsImVtYWlsIjoicG9vamEucWEuMTc4OTcxMzA0OTIxNUByZW50b3JhLXRlc3QuaW4iLCJmdWxsTmFtZSI6IlBvb2phIERlc2htdWtoIiwicm9sZXMiOlsiQ1VTVE9NRVIiXSwibXVzdENoYW5nZVBhc3N3b3JkIjpmYWxzZSwiaWF0IjoxNzg5NzEzMDU5LCJleHAiOjE3ODk3MTM5NTl9.ihe_8jUBIl2-vWJU4NiG1jf2PVfp-gY_CebKH41ffsE",
+        "refreshToken": "a3435194a779d7d368bab767e5506daced93847465dc4dce69b6680e050b40c4e8d9e298ceb15605"
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:30:59.287Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:59.860Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:30:59.940Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "User profile retrieved successfully",
+      "data": {
+        "user": {
+          "id": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+          "fullName": "Pooja Deshmukh",
+          "email": "pooja.qa.1789713049215@rentora-test.in",
+          "phone": "9123476348",
+          "avatarUrl": null,
+          "isActive": true,
+          "isVerified": false,
+          "mustChangePassword": false,
+          "lastLoginAt": null,
+          "createdAt": "2026-09-18T06:30:58.000Z",
+          "updatedAt": "2026-09-18T06:30:58.000Z",
+          "roles": [
+            {
+              "id": 1,
+              "name": "CUSTOMER",
+              "UserRole": {
+                "id": 120,
+                "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+                "roleId": 1,
+                "isActive": true,
+                "createdAt": "2026-09-18T06:30:58.000Z",
+                "updatedAt": "2026-09-18T06:30:58.000Z"
+              }
+            }
+          ],
+          "customerProfile": {
+            "id": "e0b1f97c-27b8-4ea9-86b4-b9bed318fd3a",
+            "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+            "address": null,
+            "city": "Ahmedabad",
+            "state": "Gujarat",
+            "pincode": null,
+            "kycStatus": "Pending",
+            "kycBadge": "Standard Member",
+            "trustScore": 100,
+            "createdAt": "2026-09-18T06:30:58.000Z",
+            "updatedAt": "2026-09-18T06:30:58.000Z"
+          },
+          "vendorProfile": null
+        },
+        "roles": [
+          "CUSTOMER"
+        ],
+        "customerProfile": {
+          "id": "e0b1f97c-27b8-4ea9-86b4-b9bed318fd3a",
+          "userId": "e40d78c2-316a-472e-ab8a-23ceb382beb9",
+          "address": null,
+          "city": "Ahmedabad",
+          "state": "Gujarat",
+          "pincode": null,
+          "kycStatus": "Pending",
+          "kycBadge": "Standard Member",
+          "trustScore": 100,
+          "createdAt": "2026-09-18T06:30:58.000Z",
+          "updatedAt": "2026-09-18T06:30:58.000Z"
+        },
+        "vendorProfile": null
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:31:00.487Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:00.541Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:01.720Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.079Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.502Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": {
+      "success": true,
+      "message": "Customer bookings retrieved successfully",
+      "data": {
+        "count": 0,
+        "page": 1,
+        "limit": 10,
+        "totalPages": 1,
+        "results": []
+      },
+      "errors": null
+    },
+    "time": "2026-09-18T06:31:02.569Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.695Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.714Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/bookings/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.806Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/invoices/my",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:02.822Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:07.777Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:08.102Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:11.027Z"
+  },
+  {
+    "url": "http://localhost:5173/api/v1/auth/me",
+    "status": 304,
+    "contentType": "",
+    "body": "",
+    "time": "2026-09-18T06:31:11.079Z"
+  }
+]
