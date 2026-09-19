@@ -205,8 +205,11 @@ export default function Invoices() {
                         </button>
                         <button
                           onClick={() => {
-                            if (inv.rawInvoice && inv.rawInvoice.id) {
-                              window.open(`/api/v1/invoices/${inv.rawInvoice.id}/html`, '_blank');
+                            const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+                            const invId = inv.rawInvoice?.id || inv.id;
+                            if (invId) {
+                              const tokenQuery = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';
+                              window.open(`/api/v1/invoices/${invId}/html${tokenQuery}`, '_blank');
                             } else {
                               setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv });
                             }

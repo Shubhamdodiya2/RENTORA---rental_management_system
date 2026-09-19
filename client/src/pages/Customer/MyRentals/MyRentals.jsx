@@ -56,11 +56,11 @@ export default function MyRentals() {
             id: b.id,
             orderId: b.bookingNumber || b.id?.slice(0, 8).toUpperCase(),
             title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Equipment',
-            category: 'Cameras & Photography',
+            category: b.items?.[0]?.product?.category?.name || 'Rental Equipment',
             image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80') : 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
             vendor: {
               id: b.vendorId,
-              name: b.vendor ? b.vendor.businessName : 'PixelCraft Rentals',
+              name: b.vendor ? b.vendor.businessName : 'Rentora Partner',
               city: b.vendor ? b.vendor.city : 'Ahmedabad',
               phone: b.vendor ? b.vendor.businessPhone : '+91 98250 12345',
               address: b.vendor ? b.vendor.businessAddress : 'Ahmedabad'

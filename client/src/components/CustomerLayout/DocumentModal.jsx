@@ -57,7 +57,7 @@ export default function DocumentModal({
 
   const handlePrint = () => {
     const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
-    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';
     if (docData && docData.id && (type === 'invoice' || docData.invoiceNumber)) {
       window.open(`/api/v1/invoices/${docData.id}/html${tokenParam}`, '_blank');
     } else {

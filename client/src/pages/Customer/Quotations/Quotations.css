@@ -32,6 +32,12 @@
   color: #1e40af;
 }
 
+.notice-error {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
 .quotations-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));

@@ -26,7 +26,6 @@ import {
   CUSTOMER_NOTIFICATIONS,
   SPENDING_CHART_DATA
 } from '../../../data/customerMockData';
-import { FEATURED_PRODUCTS } from '../../../data/mockData';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import './DashboardOverview.css';
@@ -37,6 +36,7 @@ export default function DashboardOverview() {
   const [activeRentalDetail, setActiveRentalDetail] = useState(null);
   const [liveBookings, setLiveBookings] = useState([]);
   const [liveInvoices, setLiveInvoices] = useState([]);
+  const [liveProducts, setLiveProducts] = useState([]);
   const [hasFetched, setHasFetched] = useState(false);
 
   const customerName = user?.fullName || user?.name || 'Customer';
@@ -45,31 +45,41 @@ export default function DashboardOverview() {
   useEffect(() => {
     const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
 
+    const fetches = [
+      fetch('/api/v1/products')
+        .then((r) => r.json())
+        .catch(() => null)
+    ];
+
     if (token) {
-      Promise.all([
+      fetches.push(
         fetch('/api/v1/bookings/my', { headers: { Authorization: `Bearer ${token}` } })
           .then((r) => r.json())
           .catch(() => null),
         fetch('/api/v1/invoices/my', { headers: { Authorization: `Bearer ${token}` } })
           .then((r) => r.json())
           .catch(() => null)
-      ]).then(([bRes, iRes]) => {
-        let bookingsList = [];
-        if (bRes && bRes.success) {
-          bookingsList = bRes.data?.results || bRes.data?.rows || (Array.isArray(bRes.data) ? bRes.data : []);
-        }
-        setLiveBookings(bookingsList);
-
-        if (iRes && iRes.success) {
-          const invList = iRes.data?.results || iRes.data?.rows || (Array.isArray(iRes.data) ? iRes.data : []);
-          setLiveInvoices(invList);
-        }
-        setHasFetched(true);
-      });
-    } else {
-      setLiveBookings([]);
-      setHasFetched(true);
+      );
     }
+
+    Promise.all(fetches).then(([prodRes, bRes, iRes]) => {
+      if (prodRes && prodRes.success) {
+        const pList = prodRes.data?.results || prodRes.data?.rows || (Array.isArray(prodRes.data) ? prodRes.data : []);
+        setLiveProducts(pList);
+      }
+
+      let bookingsList = [];
+      if (bRes && bRes.success) {
+        bookingsList = bRes.data?.results || bRes.data?.rows || (Array.isArray(bRes.data) ? bRes.data : []);
+      }
+      setLiveBookings(bookingsList);
+
+      if (iRes && iRes.success) {
+        const invList = iRes.data?.results || iRes.data?.rows || (Array.isArray(iRes.data) ? iRes.data : []);
+        setLiveInvoices(invList);
+      }
+      setHasFetched(true);
+    });
   }, [user]);
 
   // Derived metrics
@@ -80,7 +90,7 @@ export default function DashboardOverview() {
     image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80') : 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80',
     vendor: {
       id: b.vendorId,
-      name: b.vendor ? b.vendor.businessName : 'PixelCraft Rentals',
+      name: b.vendor ? b.vendor.businessName : 'Rentora Partner',
       city: b.vendor ? b.vendor.city : 'Ahmedabad'
     },
     startDate: b.startDate,
@@ -95,6 +105,51 @@ export default function DashboardOverview() {
     currentStep: 1,
     rawBooking: b
   }));
+
+  // Identify user's rented categories to provide tailored recommendations
+  const userCategoryIds = new Set();
+  const userCategoryNames = new Set();
+  liveBookings.forEach((b) => {
+    (b.items || []).forEach((item) => {
+      const p = item.product;
+      if (p?.categoryId) userCategoryIds.add(String(p.categoryId).toLowerCase());
+      if (p?.category?.id) userCategoryIds.add(String(p.category.id).toLowerCase());
+      if (p?.category?.slug) userCategoryIds.add(String(p.category.slug).toLowerCase());
+      if (p?.category?.name) userCategoryNames.add(String(p.category.name).toLowerCase());
+    });
+  });
+
+  const userRentedProductIds = new Set();
+  liveBookings.forEach((b) => {
+    (b.items || []).forEach((item) => {
+      if (item.productId) userRentedProductIds.add(String(item.productId));
+      if (item.product?.id) userRentedProductIds.add(String(item.product.id));
+    });
+  });
+
+  const activeCatalog = liveProducts.filter(
+    (p) => p.status === 'Active' && (!p.approvalStatus || p.approvalStatus === 'Approved')
+  );
+
+  // Split into matching user's rented categories vs other categories
+  const sameCategoryProducts = activeCatalog.filter((p) => {
+    const pCatId = String(p.categoryId || p.category?.id || p.category?.slug || '').toLowerCase();
+    const pCatName = String(p.category?.name || p.category || '').toLowerCase();
+    return userCategoryIds.has(pCatId) || userCategoryNames.has(pCatName);
+  });
+
+  const otherProducts = activeCatalog.filter(
+    (p) => !sameCategoryProducts.some((scp) => scp.id === p.id)
+  );
+
+  const sameCatUnrented = sameCategoryProducts.filter((p) => !userRentedProductIds.has(String(p.id)));
+  const sameCatRented = sameCategoryProducts.filter((p) => userRentedProductIds.has(String(p.id)));
+
+  const recommendedProducts = [
+    ...sameCatUnrented,
+    ...sameCatRented,
+    ...otherProducts
+  ];
 
   const activeRentals = displayBookings.filter(
     (r) => r.rentalStatus === 'Active' || r.rentalStatus === 'BOOKING_CONFIRMED' || r.rentalStatus === 'Return Scheduled'
@@ -456,7 +511,11 @@ export default function DashboardOverview() {
               <span>Recommended Gear</span>
             </div>
             <h2 className="section-card-title mt-1">Recommended for Your Next Project</h2>
-            <p className="section-card-sub">Handpicked pro gear tailored for your creative workflow</p>
+            <p className="section-card-sub">
+              {sameCategoryProducts.length > 0
+                ? 'Curated equipment based on your active rentals and categories'
+                : 'Handpicked verified gear tailored for your creative workflow'}
+            </p>
           </div>
           <Link to="/products" className="section-link">
             <span>Browse All Marketplace</span>
@@ -464,36 +523,51 @@ export default function DashboardOverview() {
           </Link>
         </div>
 
-        <div className="recommended-grid">
-          {FEATURED_PRODUCTS.slice(0, 3).map((product) => {
-            const prodImg = product.images?.[0] || product.image || '';
-            const prodTitle = product.title || product.name || 'Rental Gear';
-            const vendorName = typeof product.vendor === 'object' ? product.vendor.name : (product.vendor || 'Rentora Partner');
-            const vendorCity = typeof product.vendor === 'object' ? product.vendor.city : (product.location || 'Gujarat');
+        {recommendedProducts.length > 0 ? (
+          <div className="recommended-grid">
+            {recommendedProducts.slice(0, 3).map((product) => {
+              let prodImg = product.primaryImage || (product.images && product.images[0]?.imageUrl) || (Array.isArray(product.images) && typeof product.images[0] === 'string' ? product.images[0] : null);
+              if (!prodImg || typeof prodImg !== 'string' || prodImg.includes('unsplash.com/photos/')) {
+                prodImg = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+              }
+              const prodTitle = product.name || product.title || 'Rental Gear';
+              const catName = product.category?.name || product.category || 'Rental Gear';
+              const vendorName = product.vendor?.businessName || (typeof product.vendor === 'object' ? product.vendor.name : product.vendor) || 'Rentora Partner';
+              const vendorCity = product.vendor?.city || product.location || 'Gujarat';
+              const price = product.pricePerDay || product.discountPrice || 0;
+              const linkUrl = `/products/${product.id}`;
 
-            return (
-              <div key={product.id} className="recommended-card">
-                <div className="rec-img-wrap">
-                  <img src={prodImg} alt={prodTitle} className="rec-img" />
-                  <span className="rec-badge">{product.category}</span>
-                </div>
-                <div className="rec-content">
-                  <h4 className="rec-title">{prodTitle}</h4>
-                  <div className="rec-vendor">By {vendorName} &bull; {vendorCity}</div>
-                  <div className="rec-bottom">
-                    <div className="rec-price">
-                      <span className="rec-rate">₹{product.pricePerDay}</span>
-                      <span className="rec-unit">/ day</span>
+              return (
+                <div key={product.id} className="recommended-card">
+                  <div className="rec-img-wrap">
+                    <img src={prodImg} alt={prodTitle} className="rec-img" />
+                    <span className="rec-badge">{catName}</span>
+                  </div>
+                  <div className="rec-content">
+                    <h4 className="rec-title">{prodTitle}</h4>
+                    <div className="rec-vendor">By {vendorName} &bull; {vendorCity}</div>
+                    <div className="rec-bottom">
+                      <div className="rec-price">
+                        <span className="rec-rate">₹{price}</span>
+                        <span className="rec-unit">/ day</span>
+                      </div>
+                      <Link to={linkUrl} className="rec-cta">
+                        Rent Now
+                      </Link>
                     </div>
-                    <Link to={`/products/${product.id}`} className="rec-cta">
-                      Rent Now
-                    </Link>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-8 text-center bg-white rounded-2xl border border-dashed border-gray-200">
+            <p className="text-sm text-gray-500">Explore our full catalog to discover equipment for your next project.</p>
+            <Link to="/products" className="inline-block mt-3 px-4 py-2 bg-[#E63946] text-white text-xs font-bold rounded-xl shadow-sm hover:bg-[#D62839]">
+              Browse Products
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Universal Document Modal */}
