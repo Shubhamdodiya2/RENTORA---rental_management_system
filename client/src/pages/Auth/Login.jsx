@@ -6,7 +6,6 @@ import {
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Sparkles, 
   ShieldCheck,
   UserCheck,
   Store,
@@ -65,27 +64,6 @@ export default function Login() {
     }
   };
 
-  const fillDemoCustomer = () => {
-    setEmail('aarav.creator@rentora.in');
-    setPassword('DemoCustomer2026!');
-    setRole('customer');
-    setError('');
-  };
-
-  const fillDemoVendor = () => {
-    setEmail('pixelcraft.owner@rentora.in');
-    setPassword('DemoVendor2026!');
-    setRole('vendor');
-    setError('');
-  };
-
-  const fillDemoAdmin = () => {
-    setEmail('superadmin@rentora.in');
-    setPassword('AdminSecure2026!');
-    setRole('admin');
-    setError('');
-  };
-
   return (
     <div className="auth-page-container">
       {/* Background Decor */}
@@ -109,36 +87,6 @@ export default function Login() {
               ? 'Authorized administrative staff & operations login only.'
               : 'Sign in to access your rental dashboard, contracts & operations.'}
           </p>
-        </div>
-
-        {/* Demo Fill Helper Buttons */}
-        <div className="bg-[#F1FAEE] p-2.5 rounded-2xl border border-[#A8DADC]/40 flex flex-col sm:flex-row items-center justify-between text-xs gap-2">
-          <span className="font-bold text-[#1D3557] flex items-center gap-1 text-[11px]">
-            <Sparkles size={13} className="text-[#E63946]" /> 1-Click Demo:
-          </span>
-          <div className="flex gap-1.5 flex-wrap justify-center">
-            <button
-              type="button"
-              onClick={fillDemoCustomer}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors ${role === 'customer' ? 'bg-[#1D3557] text-white border-[#1D3557]' : 'bg-white border-[#A8DADC] text-[#1D3557] hover:bg-[#A8DADC]/30'}`}
-            >
-              Customer
-            </button>
-            <button
-              type="button"
-              onClick={fillDemoVendor}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors ${role === 'vendor' ? 'bg-[#E63946] text-white border-[#E63946]' : 'bg-white border-[#A8DADC] text-[#E63946] hover:bg-[#E63946]/10'}`}
-            >
-              Vendor
-            </button>
-            <button
-              type="button"
-              onClick={fillDemoAdmin}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-colors ${role === 'admin' ? 'bg-[#457B9D] text-white border-[#457B9D]' : 'bg-white border-[#A8DADC] text-[#457B9D] hover:bg-[#457B9D]/10'}`}
-            >
-              Super Admin
-            </button>
-          </div>
         </div>
 
         {/* Role Toggle Selector */}

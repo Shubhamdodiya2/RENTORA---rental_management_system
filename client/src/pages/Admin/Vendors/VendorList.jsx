@@ -5,6 +5,9 @@ import {
   Search,
   Filter,
   Eye,
+  Edit2,
+  Trash2,
+  X,
   CheckCircle2,
   XCircle,
   ShieldCheck,
@@ -28,6 +31,8 @@ export default function VendorList() {
     approveVendor,
     rejectVendor,
     updateVendorStatus,
+    updateVendor,
+    deleteVendor,
     requestConfirmation,
     showToast
   } = useAdmin();
@@ -86,6 +91,26 @@ export default function VendorList() {
     rejectVendor(rejectingVendor.id, rejectionReason);
     setRejectingVendor(null);
     setRejectionReason('');
+  };
+
+  // Edit Vendor Modal State
+  const [editingVendor, setEditingVendor] = useState(null);
+
+  const handleDeleteVendor = (vendor) => {
+    requestConfirmation({
+      title: `Delete Vendor: ${vendor.businessName}?`,
+      message: `Are you sure you want to permanently delete "${vendor.businessName}"? This will remove all their listed catalog products and vendor profile. This action cannot be undone.`,
+      confirmText: 'Delete Vendor',
+      confirmColor: 'red',
+      onConfirm: () => deleteVendor(vendor.id)
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingVendor) return;
+    await updateVendor(editingVendor.id, editingVendor);
+    setEditingVendor(null);
   };
 
   return (
@@ -288,6 +313,28 @@ export default function VendorList() {
                         >
                           <Eye size={14} />
                         </Link>
+
+                        <button
+                          onClick={() => setEditingVendor({
+                            ...vendor,
+                            category: vendor.category || 'General',
+                            commissionRate: vendor.commissionRate || 10,
+                            address: vendor.address || '',
+                            accountStatus: vendor.accountStatus || 'Active'
+                          })}
+                          title="Quick Edit Vendor Details"
+                          className="p-1.5 rounded-lg bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-colors border border-slate-200/60"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteVendor(vendor)}
+                          title="Delete Vendor Store"
+                          className="p-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 transition-colors border border-rose-200/50"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -356,6 +403,196 @@ export default function VendorList() {
                   className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs"
                 >
                   Confirm Rejection
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Vendor Modal */}
+      {editingVendor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs animate-in fade-in overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                  <Store size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold font-['Sora'] text-slate-900">
+                    Edit Vendor Store
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Update store profile, verification status, and commission rates.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingVendor(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs font-semibold text-slate-800">
+              {/* Store & Category */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Store / Business Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVendor.businessName || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, businessName: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Store Category</label>
+                  <select
+                    value={editingVendor.category || 'Cameras & Cinema'}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, category: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white cursor-pointer"
+                  >
+                    <option value="Cameras & Cinema">Cameras & Cinema</option>
+                    <option value="Drones & Aerial">Drones & Aerial</option>
+                    <option value="Vehicles & SUVs">Vehicles & SUVs</option>
+                    <option value="Event & Sound">Event & Sound</option>
+                    <option value="Electronics & Gaming">Electronics & Gaming</option>
+                    <option value="Designer Outfits">Designer Outfits</option>
+                    <option value="Furniture & Workspaces">Furniture & Workspaces</option>
+                    <option value="General Equipment">General Equipment</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Owner & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Owner Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVendor.ownerName || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, ownerName: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Phone Number</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVendor.phone || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, phone: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Email & GST */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Business Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingVendor.email || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, email: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">GST Number / GSTIN</label>
+                  <input
+                    type="text"
+                    value={editingVendor.gstNumber || editingVendor.gstin || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, gstNumber: e.target.value, gstin: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400 uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* City & Address */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">City</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingVendor.city || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, city: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Address</label>
+                  <input
+                    type="text"
+                    value={editingVendor.address || ''}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, address: e.target.value })}
+                    placeholder="Shop / Area address"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+              </div>
+
+              {/* Verification, Account Status & Commission */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">KYC Verification</label>
+                  <select
+                    value={editingVendor.verificationStatus || 'Approved'}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, verificationStatus: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white cursor-pointer"
+                  >
+                    <option value="Approved">Approved</option>
+                    <option value="Pending Approval">Pending Approval</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Suspended">Suspended</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Account Status</label>
+                  <select
+                    value={editingVendor.accountStatus || 'Active'}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, accountStatus: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 bg-white cursor-pointer"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-500 uppercase text-[10px]">Platform Comm. (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={editingVendor.commissionRate ?? 10}
+                    onChange={(e) => setEditingVendor({ ...editingVendor, commissionRate: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-slate-200 focus:border-slate-400"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingVendor(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors"
+                >
+                  Save Store Changes
                 </button>
               </div>
             </form>

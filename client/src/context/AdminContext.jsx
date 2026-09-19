@@ -224,15 +224,20 @@ export function AdminProvider({ children }) {
             phone: v.businessPhone || v.user?.phone || '+91 98250 00000',
             city: v.city || 'Ahmedabad',
             address: v.businessAddress || 'Gujarat Service Hub',
+            category: v.businessCategory || v.category || 'General Equipment',
+            businessCategory: v.businessCategory || v.category || 'General Equipment',
             verificationStatus: v.verificationStatus === 'Approved' ? 'Approved' : v.verificationStatus === 'Rejected' ? 'Rejected' : 'Pending Approval',
             accountStatus: v.user?.isActive !== false ? 'Active' : 'Inactive',
-            totalProducts: v.productsCount || 0,
-            totalRentals: v.ordersCount || 0,
+            totalProducts: Number(v.productsCount || 0),
+            totalRentals: Number(v.ordersCount || 0),
             totalRevenue: Number(v.totalRevenue || 0),
+            revenue: Number(v.totalRevenue || 0),
             payoutBalance: Number(v.payoutBalance || 0),
+            commissionRate: Number(v.commissionRate || 10),
             rating: v.rating ? Number(v.rating) : 5.0,
             joinedDate: new Date(v.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-            gstNumber: v.gstNumber || '24AAAPL1234C1ZV',
+            gstNumber: v.gstNumber || v.gstin || '24AAAPL1234C1ZV',
+            gstin: v.gstNumber || v.gstin || '24AAAPL1234C1ZV',
             documents: [
               { name: 'Business Registration / GST', status: 'Submitted', type: 'PDF' },
               { name: 'Owner Government ID / Aadhaar', status: 'Verified', type: 'PDF' }
@@ -621,11 +626,34 @@ export function AdminProvider({ children }) {
     showToast(`Vendor status set to "${newStatus}".`, 'success');
   };
 
-  const updateVendor = (id, updatedFields) => {
+  const updateVendor = async (id, updatedFields) => {
     setVendors((prev) =>
       prev.map((v) => (v.id === id ? { ...v, ...updatedFields } : v))
     );
-    showToast('Vendor store details updated.', 'success');
+    try {
+      await api.put(`/admin/vendors/${id}`, updatedFields);
+      const target = vendors.find((v) => v.id === id);
+      logActivity('Updated Vendor Details', 'Vendors', `Updated store dossier for ${updatedFields.businessName || target?.businessName || id}`);
+      showToast('Vendor store details updated successfully.', 'success');
+      fetchAllAdminData();
+    } catch (error) {
+      showToast(`Failed to update vendor: ${error.response?.data?.message || error.message}`, 'error');
+    }
+  };
+
+  const deleteVendor = async (id) => {
+    const target = vendors.find((v) => v.id === id);
+    const storeName = target?.businessName || 'Vendor';
+    setVendors((prev) => prev.filter((v) => v.id !== id));
+    try {
+      await api.delete(`/admin/vendors/${id}`);
+      logActivity('Deleted Vendor Store', 'Vendors', `Removed vendor profile and store "${storeName}" (${id})`);
+      showToast(`Vendor store "${storeName}" deleted successfully.`, 'info');
+      fetchAllAdminData();
+    } catch (error) {
+      showToast(`Failed to delete vendor: ${error.response?.data?.message || error.message}`, 'error');
+      fetchAllAdminData();
+    }
   };
 
   const disburseVendorPayout = (id, amount) => {
@@ -1082,6 +1110,7 @@ export function AdminProvider({ children }) {
         rejectVendor,
         updateVendorStatus,
         updateVendor,
+        deleteVendor,
         disburseVendorPayout,
 
         // Product handlers
