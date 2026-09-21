@@ -30,6 +30,7 @@ import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../services/api';
+import ProductReviews from '../../components/ProductReviews/ProductReviews';
 import './ProductDetails.css';
 
 function formatApiProduct(p) {
@@ -333,16 +334,8 @@ export default function ProductDetails() {
               {/* Vendor & Rating Row */}
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2 border-t border-gray-100 text-xs">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full overflow-hidden border border-[#A8DADC]">
-                    <img
-                      src={product.vendor.logo}
-                      alt={product.vendor.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=100&q=80';
-                      }}
-                    />
+                  <div className="w-8 h-8 rounded-full bg-[#1D3557]/10 border border-[#A8DADC] flex items-center justify-center text-[#1D3557] flex-shrink-0">
+                    <Store size={15} className="text-[#1D3557]" />
                   </div>
                   <div>
                     <span className="font-bold text-[#1D3557] flex items-center gap-1">
@@ -484,15 +477,9 @@ export default function ProductDetails() {
             {/* Vendor Profile Storefront Box */}
             <div className="bg-white rounded-3xl border border-[#A8DADC]/40 p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <img
-                  src={product.vendor.logo}
-                  alt={product.vendor.name}
-                  className="w-16 h-16 rounded-2xl object-cover border-2 border-[#A8DADC]"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=100&q=80';
-                  }}
-                />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#1D3557]/10 to-[#457B9D]/15 border-2 border-[#A8DADC] flex items-center justify-center text-[#1D3557] flex-shrink-0 shadow-sm">
+                  <Store size={28} className="text-[#1D3557]" />
+                </div>
                 <div className="space-y-1">
                   <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#E63946]/10 text-[#E63946] text-[10px] font-bold uppercase">
                     <Sparkles size={10} /> {product.vendor.badge}
@@ -702,6 +689,23 @@ export default function ProductDetails() {
           </div>
 
         </div>
+
+        {/* Customer Reviews & Feedback Section */}
+        {product.id && (
+          <ProductReviews
+            productId={product.id}
+            onReviewAdded={async () => {
+              try {
+                const res = await api.get(`/products/${productId}`);
+                if (res.data?.success && res.data.data) {
+                  setProduct(formatApiProduct(res.data.data));
+                }
+              } catch (err) {
+                console.warn(err);
+              }
+            }}
+          />
+        )}
 
         {/* Related Products Section */}
         {relatedProducts.length > 0 && (

@@ -55,3 +55,75 @@
   display: flex;
   gap: 0.5rem;
 }
+
+/* Modal Support */
+.v-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(29, 53, 87, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.v-modal-card {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 580px;
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: vModalPop 0.22s ease-out;
+}
+
+@keyframes vModalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.v-modal-hdr {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.v-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.15s;
+}
+
+.v-modal-close:hover {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+.v-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.v-modal-footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}

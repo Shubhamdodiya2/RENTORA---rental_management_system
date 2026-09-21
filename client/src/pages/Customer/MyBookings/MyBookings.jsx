@@ -9,10 +9,15 @@ import {
   Filter,
   CheckCircle2,
   Calendar,
-  X,
   ExternalLink,
-  Receipt
+  Receipt,
+  Star,
+  Sparkles,
+  Send,
+  Loader2,
+  AlertCircle
 } from 'lucide-react';
+import api from '../../../services/api';
 import { CUSTOMER_RENTALS } from '../../../data/customerMockData';
 import { FEATURED_PRODUCTS } from '../../../data/mockData';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
@@ -28,6 +33,16 @@ export default function MyBookings() {
   const [detailBooking, setDetailBooking] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Review Modal State
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewComment, setReviewComment] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSuccess, setReviewSuccess] = useState('');
+  const [reviewError, setReviewError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
@@ -46,6 +61,7 @@ export default function MyBookings() {
           const mapped = list.map((b) => ({
             id: b.id,
             orderId: b.bookingNumber || b.id?.slice(0, 8).toUpperCase(),
+            productId: b.items?.[0]?.productId || b.items?.[0]?.product?.id,
             title: b.items && b.items[0] && b.items[0].product ? b.items[0].product.name : 'Rental Equipment',
             category: b.items?.[0]?.product?.category?.name || 'Rental Equipment',
             image: b.items && b.items[0] && b.items[0].product ? (b.items[0].product.primaryImage || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80') : 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80',
@@ -79,6 +95,41 @@ export default function MyBookings() {
       setHasLoaded(true);
     }
   }, [user]);
+
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewTarget || !reviewTarget.productId) {
+      setReviewError('Product information missing for this booking');
+      return;
+    }
+    if (!reviewComment.trim() || reviewComment.trim().length < 3) {
+      setReviewError('Please enter at least a few words describing your experience');
+      return;
+    }
+
+    setIsSubmittingReview(true);
+    setReviewError('');
+
+    try {
+      await api.post(`/reviews/products/${reviewTarget.productId}`, {
+        rating: reviewRating,
+        title: reviewTitle.trim(),
+        comment: reviewComment.trim(),
+        bookingId: reviewTarget.id
+      });
+      setReviewSuccess('Review published successfully! Thank you for rating.');
+      setTimeout(() => {
+        setReviewTarget(null);
+        setReviewSuccess('');
+        setReviewTitle('');
+        setReviewComment('');
+      }, 1500);
+    } catch (err) {
+      setReviewError(err.response?.data?.message || err.message || 'Failed to submit review');
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
 
   const displayList = hasLoaded ? bookings : CUSTOMER_RENTALS;
 
@@ -235,6 +286,20 @@ export default function MyBookings() {
                     <td>
                       <div className="table-actions-group">
                         <button
+                          onClick={() => {
+                            setReviewTarget(booking);
+                            setReviewRating(5);
+                            setReviewTitle('');
+                            setReviewComment('');
+                            setReviewError('');
+                            setReviewSuccess('');
+                          }}
+                          className="action-icon-btn text-amber-500 hover:text-amber-600 hover:bg-amber-50"
+                          title="Rate & Review Gear"
+                        >
+                          <Star size={15} fill="currentColor" />
+                        </button>
+                        <button
                           onClick={() => setSelectedDoc({ type: 'invoice', id: booking.orderId })}
                           className="action-icon-btn"
                           title="View Invoice"
@@ -258,6 +323,129 @@ export default function MyBookings() {
           </div>
         )}
       </div>
+
+      {/* Rate & Review Modal */}
+      {reviewTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold">
+                  <Star size={18} fill="currentColor" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#1D3557] text-base font-['Sora']">Rate & Review Rental</h4>
+                  <p className="text-[11px] text-[#457B9D]">{reviewTarget.title} • Order #{reviewTarget.orderId}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setReviewTarget(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {reviewSuccess ? (
+              <div className="p-6 text-center space-y-2 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800">
+                <CheckCircle2 size={36} className="text-emerald-600 mx-auto" />
+                <h5 className="font-bold text-base">Review Published!</h5>
+                <p className="text-xs">{reviewSuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handleReviewSubmit} className="space-y-4">
+                {reviewError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                    <AlertCircle size={15} className="shrink-0" />
+                    <span>{reviewError}</span>
+                  </div>
+                )}
+
+                {/* Star Selector */}
+                <div className="text-center space-y-1 py-2 bg-[#F1FAEE] rounded-2xl border border-[#A8DADC]/40">
+                  <label className="text-xs font-bold text-[#1D3557] block">
+                    Your Overall Rating *
+                  </label>
+                  <div className="flex items-center justify-center gap-2 pt-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setReviewRating(star)}
+                        onMouseEnter={() => setReviewHoverRating(star)}
+                        onMouseLeave={() => setReviewHoverRating(0)}
+                        className="p-1 hover:scale-110 transition-transform cursor-pointer"
+                      >
+                        <Star
+                          size={30}
+                          fill={(reviewHoverRating || reviewRating) >= star ? 'currentColor' : 'none'}
+                          className={(reviewHoverRating || reviewRating) >= star ? 'text-amber-400' : 'text-slate-300'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-xs font-bold text-[#E63946] pt-1">
+                    {reviewRating === 5 && 'Outstanding & Flawless ★★★★★'}
+                    {reviewRating === 4 && 'Very Good Equipment ★★★★☆'}
+                    {reviewRating === 3 && 'Average Experience ★★★☆☆'}
+                    {reviewRating === 2 && 'Below Expectations ★★☆☆☆'}
+                    {reviewRating === 1 && 'Unsatisfactory ★☆☆☆☆'}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Review Title (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={reviewTitle}
+                    onChange={(e) => setReviewTitle(e.target.value)}
+                    placeholder="e.g. Pristine condition, worked seamlessly!"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#E63946]"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Your Detailed Review *
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    required
+                    placeholder="How was the equipment condition, sound/performance, battery, and handover?"
+                    className="w-full p-3 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-[#E63946]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setReviewTarget(null)}
+                    className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingReview}
+                    className="px-5 py-2 rounded-xl bg-[#E63946] text-white text-xs font-bold hover:bg-[#D62839] transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                  >
+                    {isSubmittingReview ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                    <span>Submit Review</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Universal Document Modal */}
       {selectedDoc && (

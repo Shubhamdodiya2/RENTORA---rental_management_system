@@ -20,7 +20,8 @@ import {
   Store,
   Compass,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  FileText
 } from 'lucide-react';
 import Logo from '../Logo/Logo';
 import { useVendor } from '../../context/VendorContext';
@@ -45,7 +46,8 @@ export default function VendorSidebar({
     { path: '/vendor/products', label: 'Products', icon: Package, badge: products.length > 0 ? String(products.length) : null },
     { path: '/vendor/inventory', label: 'Inventory', icon: Boxes, alert: lowStockCount > 0 ? `${lowStockCount} Low` : null },
     { path: '/vendor/pricing', label: 'Pricing & Rates', icon: Tag },
-    { path: '/vendor/orders', label: 'Orders & Quotes', icon: ClipboardList, badge: activeOrdersCount > 0 ? `${activeOrdersCount} New` : null },
+    { path: '/vendor/orders', label: 'Orders & Bookings', icon: ClipboardList, badge: activeOrdersCount > 0 ? `${activeOrdersCount} New` : null },
+    { path: '/vendor/quotations', label: 'Commercial Quotes', icon: FileText },
     { path: '/vendor/pickups-returns', label: 'Pickup & Returns', icon: Truck },
     { path: '/vendor/customers', label: 'Customers', icon: Users },
     { path: '/vendor/invoices', label: 'Invoices', icon: Receipt },

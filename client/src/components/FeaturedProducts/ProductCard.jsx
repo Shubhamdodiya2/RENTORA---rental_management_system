@@ -7,7 +7,8 @@ import {
   ShieldCheck, 
   Zap, 
   Calendar,
-  ArrowRight
+  ArrowRight,
+  Store
 } from 'lucide-react';
 import { useBooking } from '../../context/BookingContext';
 import { useWishlist } from '../../context/WishlistContext';
@@ -109,8 +110,8 @@ export default function ProductCard({ product }) {
         
         <div>
           <div className="flex items-center justify-between text-xs text-[#457B9D] mb-1.5">
-            <span className="font-semibold text-[#1D3557] flex items-center gap-1 truncate max-w-[170px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block flex-shrink-0" />
+            <span className="font-semibold text-[#1D3557] flex items-center gap-1.5 truncate max-w-[170px]">
+              <Store size={13} className="text-[#457B9D] flex-shrink-0" />
               {product.vendor.name}
             </span>
             <span className="flex items-center gap-0.5 text-gray-500 text-[11px]">

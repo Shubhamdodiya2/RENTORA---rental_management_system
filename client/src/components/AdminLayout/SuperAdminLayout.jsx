@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
@@ -14,6 +14,7 @@ export default function SuperAdminLayout() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const {
+    refreshData,
     toast,
     hideToast,
     confirmationModal,
@@ -21,6 +22,12 @@ export default function SuperAdminLayout() {
     documentModal,
     closeDocumentModal
   } = useAdmin();
+
+  useEffect(() => {
+    if (typeof refreshData === 'function') {
+      refreshData();
+    }
+  }, [refreshData]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans antialiased flex selection:bg-blue-600 selection:text-white">

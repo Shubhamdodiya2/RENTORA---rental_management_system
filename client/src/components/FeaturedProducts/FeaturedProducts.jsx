@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FEATURED_PRODUCTS } from '../../data/mockData';
 import ProductCard from './ProductCard';
-import { Sparkles, SlidersHorizontal, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, ArrowRight, ShieldAlert, Store } from 'lucide-react';
 import api from '../../services/api';
 import './FeaturedProducts.css';
 
@@ -241,7 +241,10 @@ export default function FeaturedProducts({ selectedCategory, onSelectCategory })
             <div className="bg-[#F1FAEE] p-4 rounded-2xl space-y-2 text-xs text-[#1D3557]">
               <div className="flex justify-between font-medium">
                 <span>Vendor:</span>
-                <span className="font-bold">{selectedProduct.vendor.name} ({selectedProduct.vendor.city})</span>
+                <span className="font-bold flex items-center gap-1.5">
+                  <Store size={12} className="text-[#457B9D]" />
+                  {selectedProduct.vendor.name} ({selectedProduct.vendor.city})
+                </span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Refundable Deposit:</span>

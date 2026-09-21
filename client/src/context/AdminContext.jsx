@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
+  const { user, roles, isAuthenticated } = useAuth();
+  const isSuperAdmin = Boolean(
+    isAuthenticated && (
+      (Array.isArray(roles) && roles.includes('SUPER_ADMIN')) ||
+      (Array.isArray(user?.roles) && user.roles.includes('SUPER_ADMIN')) ||
+      user?.role === 'SUPER_ADMIN'
+    )
+  );
   // Core Data States
   const [metrics, setMetrics] = useState({
     totalCustomers: 0,
@@ -513,8 +522,10 @@ export function AdminProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    fetchAllAdminData();
-  }, [fetchAllAdminData]);
+    if (isSuperAdmin) {
+      fetchAllAdminData();
+    }
+  }, [isSuperAdmin, fetchAllAdminData]);
 
   // ================= CUSTOMERS CRUD =================
   const updateCustomerStatus = async (id, newStatus) => {
