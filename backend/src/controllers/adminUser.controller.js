@@ -1,4 +1,10 @@
-const { User, Role, UserRole, CustomerProfile, VendorProfile, AuditLog, Booking, Order, Product, Category, Complaint } = require('../models');
+const {
+  User, Role, UserRole, CustomerProfile, VendorProfile, VendorDocument, AuditLog,
+  Booking, BookingItem, BookingStatusHistory, Order, RentalPayment, EscrowDeposit,
+  Commission, Invoice, PaymentSubmission, RentalAgreement, Quotation, QuotationItem,
+  Pickup, Return, QualityInspection, DamageReport, Product, ProductImage,
+  ProductSpecification, Inventory, InventoryTransaction, Category, Complaint, sequelize
+} = require('../models');
 const ApiResponse = require('../utils/apiResponse');
 const { ROLES } = require('../config/constants');
 const { Op } = require('sequelize');
@@ -138,7 +144,43 @@ class AdminUserController {
         offset
       });
 
-      return ApiResponse.paginated(res, 'Vendors retrieved successfully', vendors, total, parseInt(page, 10), parseInt(limit, 10));
+      const enrichedVendors = await Promise.all(
+        vendors.map(async (vendor) => {
+          const vJson = vendor.toJSON();
+
+          const [productsCount, ordersCount, rawRevenue] = await Promise.all([
+            Product.count({ where: { vendorId: vendor.id } }),
+            Booking.count({
+              where: {
+                vendorId: vendor.id,
+                status: { [Op.ne]: 'CANCELLED' }
+              }
+            }),
+            Booking.sum('totalAmount', {
+              where: {
+                vendorId: vendor.id,
+                status: { [Op.ne]: 'CANCELLED' }
+              }
+            })
+          ]);
+
+          const totalRevenue = Number(rawRevenue || 0);
+          const commRate = parseFloat(vendor.commissionRate) || 10.0;
+          // Payout balance is net merchant earnings: totalRevenue * (1 - commRate / 100)
+          const payoutBalance = Math.round(totalRevenue * (1 - commRate / 100));
+
+          return {
+            ...vJson,
+            productsCount,
+            ordersCount,
+            totalRevenue,
+            revenue: totalRevenue,
+            payoutBalance
+          };
+        })
+      );
+
+      return ApiResponse.paginated(res, 'Vendors retrieved successfully', enrichedVendors, total, parseInt(page, 10), parseInt(limit, 10));
     } catch (error) {
       console.error('[Admin Get Vendors Error]:', error);
       return ApiResponse.error(res, 'Failed to fetch vendors', error.message, 500);
@@ -179,13 +221,8 @@ class AdminUserController {
         adminName: req.user.fullName,
         action: `VENDOR_${verificationStatus.toUpperCase()}`,
         module: 'VENDORS',
+        description: `Set verification status for vendor store "${vendor.businessName}" to ${verificationStatus}${rejectionReason ? ` (Reason: ${rejectionReason})` : ''}`,
         targetId: vendor.id,
-        targetType: 'VendorProfile',
-        details: {
-          businessName: vendor.businessName,
-          verificationStatus,
-          rejectionReason: rejectionReason || null
-        },
         ipAddress: req.ip,
         userAgent: req.headers['user-agent']
       });
@@ -194,6 +231,270 @@ class AdminUserController {
     } catch (error) {
       console.error('[Admin Update Vendor Status Error]:', error);
       return ApiResponse.error(res, 'Failed to update vendor status', error.message, 500);
+    }
+  }
+
+  /**
+   * PUT /api/v1/admin/vendors/:id
+   * Update vendor details (business name, category, phone, address, city, verification status, commission rate, user account)
+   */
+  static async updateVendor(req, res) {
+    try {
+      const { id } = req.params;
+      const {
+        businessName,
+        businessCategory,
+        category,
+        gstNumber,
+        gstin,
+        businessEmail,
+        businessPhone,
+        businessAddress,
+        city,
+        state,
+        workingHours,
+        description,
+        verificationStatus,
+        commissionRate,
+        ownerName,
+        accountStatus,
+        isActive
+      } = req.body;
+
+      const vendor = await VendorProfile.findByPk(id, {
+        include: [{ model: User, as: 'user' }]
+      });
+
+      if (!vendor) {
+        return ApiResponse.error(res, 'Vendor profile not found', null, 404);
+      }
+
+      if (businessName !== undefined) vendor.businessName = businessName.trim();
+      if (businessCategory !== undefined || category !== undefined) {
+        vendor.businessCategory = (businessCategory || category).trim();
+      }
+      if (gstNumber !== undefined || gstin !== undefined) {
+        vendor.gstNumber = (gstNumber || gstin || '').trim();
+      }
+      if (businessEmail !== undefined) vendor.businessEmail = businessEmail.trim();
+      if (businessPhone !== undefined) vendor.businessPhone = businessPhone.trim();
+      if (businessAddress !== undefined) vendor.businessAddress = businessAddress.trim();
+      if (city !== undefined) vendor.city = city.trim();
+      if (state !== undefined) vendor.state = state.trim();
+      if (workingHours !== undefined) vendor.workingHours = workingHours.trim();
+      if (description !== undefined) vendor.description = description ? description.trim() : null;
+      if (commissionRate !== undefined && !isNaN(parseFloat(commissionRate))) {
+        vendor.commissionRate = parseFloat(commissionRate);
+      }
+      if (verificationStatus !== undefined && ['Pending', 'Pending Approval', 'Approved', 'Rejected', 'Suspended'].includes(verificationStatus)) {
+        vendor.verificationStatus = verificationStatus === 'Pending Approval' ? 'Pending' : verificationStatus;
+        if (vendor.verificationStatus === 'Approved' && !vendor.approvedAt) {
+          vendor.approvedBy = req.user.id;
+          vendor.approvedAt = new Date();
+        }
+      }
+
+      await vendor.save();
+
+      // Update associated user if ownerName, phone, or accountStatus provided
+      if (vendor.user) {
+        let userModified = false;
+        if (ownerName && ownerName.trim()) {
+          vendor.user.fullName = ownerName.trim();
+          userModified = true;
+        }
+        if (businessPhone && businessPhone.trim() && !vendor.user.phone) {
+          vendor.user.phone = businessPhone.trim();
+          userModified = true;
+        }
+        if (accountStatus !== undefined) {
+          vendor.user.isActive = accountStatus === 'Active';
+          userModified = true;
+        } else if (isActive !== undefined) {
+          vendor.user.isActive = Boolean(isActive);
+          userModified = true;
+        }
+        if (userModified) {
+          await vendor.user.save();
+        }
+      }
+
+      // Log audit entry
+      await AuditLog.create({
+        adminId: req.user.id,
+        adminName: req.user.fullName,
+        action: 'VENDOR_UPDATED',
+        module: 'VENDORS',
+        description: `Updated vendor store profile for "${vendor.businessName}" (City: ${vendor.city}, Status: ${vendor.verificationStatus})`,
+        targetId: vendor.id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      const updatedVendor = await VendorProfile.findByPk(id, {
+        include: [{ model: User, as: 'user' }]
+      });
+
+      return ApiResponse.success(res, 'Vendor details updated successfully', { vendor: updatedVendor });
+    } catch (error) {
+      console.error('[Admin Update Vendor Error]:', error);
+      return ApiResponse.error(res, 'Failed to update vendor', error.message, 500);
+    }
+  }
+
+  /**
+   * DELETE /api/v1/admin/vendors/:id
+   * Delete or deactivate a vendor and clean up / cascade store data
+   */
+  static async deleteVendor(req, res) {
+    const t = await sequelize.transaction();
+    try {
+      const { id } = req.params;
+      const vendor = await VendorProfile.findByPk(id, {
+        include: [
+          { model: User, as: 'user' },
+          { model: Product, as: 'products' }
+        ],
+        transaction: t
+      });
+
+      if (!vendor) {
+        await t.rollback();
+        return ApiResponse.error(res, 'Vendor profile not found', null, 404);
+      }
+
+      const businessName = vendor.businessName;
+      const userId = vendor.userId;
+
+      // 1. Find all vendor booking IDs
+      const vendorBookings = await Booking.findAll({
+        where: { vendorId: vendor.id },
+        attributes: ['id'],
+        transaction: t
+      });
+      const bookingIds = vendorBookings.map((b) => b.id);
+
+      // 2. Find all vendor quotation IDs
+      const vendorQuotations = await Quotation.findAll({
+        where: { vendorId: vendor.id },
+        attributes: ['id'],
+        transaction: t
+      });
+      const quotationIds = vendorQuotations.map((q) => q.id);
+
+      // 3. Find all vendor product IDs
+      const vendorProducts = await Product.findAll({
+        where: { vendorId: vendor.id },
+        attributes: ['id'],
+        transaction: t
+      });
+      const productIds = vendorProducts.map((p) => p.id);
+
+      // 4. Delete Logistics & QC tied to bookings
+      if (bookingIds.length > 0) {
+        const returns = await Return.findAll({
+          where: { bookingId: bookingIds },
+          attributes: ['id'],
+          transaction: t
+        });
+        const returnIds = returns.map((r) => r.id);
+
+        if (returnIds.length > 0) {
+          const inspections = await QualityInspection.findAll({
+            where: { returnId: returnIds },
+            attributes: ['id'],
+            transaction: t
+          });
+          const inspectionIds = inspections.map((i) => i.id);
+
+          if (inspectionIds.length > 0) {
+            await DamageReport.destroy({ where: { inspectionId: inspectionIds }, transaction: t });
+          }
+          await QualityInspection.destroy({ where: { returnId: returnIds }, transaction: t });
+        }
+
+        await Return.destroy({ where: { bookingId: bookingIds }, transaction: t });
+        await Pickup.destroy({ where: { bookingId: bookingIds }, transaction: t });
+      }
+
+      // 5. Delete Orders and Financial records referencing vendorId or bookingId
+      await RentalPayment.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await EscrowDeposit.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await Commission.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await PaymentSubmission.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await Invoice.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await RentalAgreement.destroy({ where: { vendorId: vendor.id }, transaction: t });
+      await Order.destroy({ where: { vendorId: vendor.id }, transaction: t });
+
+      // 6. Delete Bookings and Booking Items
+      if (bookingIds.length > 0) {
+        await BookingItem.destroy({ where: { bookingId: bookingIds }, transaction: t });
+        await BookingStatusHistory.destroy({ where: { bookingId: bookingIds }, transaction: t });
+        await Booking.destroy({ where: { id: bookingIds }, transaction: t });
+      }
+
+      // 7. Delete Quotations & Quotation Items
+      if (quotationIds.length > 0) {
+        await QuotationItem.destroy({ where: { quotationId: quotationIds }, transaction: t });
+        await Quotation.destroy({ where: { id: quotationIds }, transaction: t });
+      }
+
+      // 8. Delete Product Inventory & Sub-models
+      if (productIds.length > 0) {
+        await InventoryTransaction.destroy({ where: { productId: productIds }, transaction: t });
+        await Inventory.destroy({ where: { productId: productIds }, transaction: t });
+        await ProductSpecification.destroy({ where: { productId: productIds }, transaction: t });
+        await ProductImage.destroy({ where: { productId: productIds }, transaction: t });
+        await Product.destroy({ where: { id: productIds }, transaction: t });
+      }
+
+      // 9. Delete Vendor Documents
+      await VendorDocument.destroy({ where: { vendorId: vendor.id }, transaction: t });
+
+      // 10. Delete Vendor Profile
+      await vendor.destroy({ transaction: t });
+
+      // 11. Clean up User account or remove VENDOR role
+      if (userId) {
+        const user = await User.findByPk(userId, {
+          include: [{ model: Role, as: 'roles' }],
+          transaction: t
+        });
+        if (user) {
+          const vendorRole = await Role.findOne({ where: { name: 'VENDOR' }, transaction: t });
+          if (vendorRole) {
+            await UserRole.destroy({
+              where: { userId: user.id, roleId: vendorRole.id },
+              transaction: t
+            });
+          }
+
+          const hasCustomerRole = user.roles && user.roles.some((r) => r.name === 'CUSTOMER');
+          const hasAdminRole = user.roles && user.roles.some((r) => r.name === 'SUPER_ADMIN');
+          if (!hasCustomerRole && !hasAdminRole) {
+            await user.destroy({ transaction: t });
+          }
+        }
+      }
+
+      // 12. Log audit
+      await AuditLog.create({
+        adminId: req.user.id,
+        adminName: req.user.fullName,
+        action: 'VENDOR_DELETED',
+        module: 'VENDORS',
+        description: `Super Admin permanently deleted vendor store "${businessName}" (${id}) and cleaned up all associated listings and records`,
+        targetId: id,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      }, { transaction: t });
+
+      await t.commit();
+      return ApiResponse.success(res, `Vendor "${businessName}" has been successfully deleted from the platform.`);
+    } catch (error) {
+      await t.rollback();
+      console.error('[Admin Delete Vendor Error]:', error);
+      return ApiResponse.error(res, 'Failed to delete vendor', error.message, 500);
     }
   }
 

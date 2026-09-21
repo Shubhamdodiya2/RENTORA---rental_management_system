@@ -33,11 +33,22 @@ export function AuthProvider({ children }) {
   // Derive primary role for navigation
   const primaryRole = isSuperAdmin ? 'SUPER_ADMIN' : isVendor ? 'VENDOR' : isCustomer ? 'CUSTOMER' : null;
 
-  // Initialize auth state from local/session storage and verify with backend
+  // Clean up legacy localStorage auth keys once to prevent cross-tab leaks
+  useEffect(() => {
+    try {
+      localStorage.removeItem('rentora_token');
+      localStorage.removeItem('rentora_refresh_token');
+      localStorage.removeItem('rentora_user');
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Initialize auth state strictly from tab-scoped sessionStorage and verify with backend
   const checkAuth = useCallback(async () => {
     try {
-      const savedToken = sessionStorage.getItem('rentora_token') || localStorage.getItem('rentora_token');
-      const savedUserData = sessionStorage.getItem('rentora_user') || localStorage.getItem('rentora_user');
+      const savedToken = sessionStorage.getItem('rentora_token');
+      const savedUserData = sessionStorage.getItem('rentora_user');
 
       if (savedUserData) {
         try {
@@ -71,7 +82,6 @@ export function AuthProvider({ children }) {
           });
           sessionStorage.setItem('rentora_token', savedToken);
           sessionStorage.setItem('rentora_user', payloadStr);
-          localStorage.setItem('rentora_user', payloadStr);
         }
       }
     } catch {
@@ -79,9 +89,6 @@ export function AuthProvider({ children }) {
       sessionStorage.removeItem('rentora_token');
       sessionStorage.removeItem('rentora_refresh_token');
       sessionStorage.removeItem('rentora_user');
-      localStorage.removeItem('rentora_token');
-      localStorage.removeItem('rentora_refresh_token');
-      localStorage.removeItem('rentora_user');
       setUser(null);
       setRoles([]);
       setCustomerProfile(null);
@@ -123,13 +130,10 @@ export function AuthProvider({ children }) {
       });
 
       sessionStorage.setItem('rentora_token', token);
-      localStorage.setItem('rentora_token', token);
       if (refreshToken) {
         sessionStorage.setItem('rentora_refresh_token', refreshToken);
-        localStorage.setItem('rentora_refresh_token', refreshToken);
       }
       sessionStorage.setItem('rentora_user', userPayloadStr);
-      localStorage.setItem('rentora_user', userPayloadStr);
 
       const primary = (userRoles || []).includes('SUPER_ADMIN')
         ? 'SUPER_ADMIN'
@@ -173,7 +177,7 @@ export function AuthProvider({ children }) {
    */
   const logout = async () => {
     try {
-      const storedRefreshToken = sessionStorage.getItem('rentora_refresh_token') || localStorage.getItem('rentora_refresh_token');
+      const storedRefreshToken = sessionStorage.getItem('rentora_refresh_token');
       await api.post('/auth/logout', { refreshToken: storedRefreshToken });
     } catch {
       // ignore network errors on logout
@@ -183,9 +187,6 @@ export function AuthProvider({ children }) {
       sessionStorage.removeItem('rentora_user');
       sessionStorage.removeItem('rentora_confirmed_booking');
 
-      localStorage.removeItem('rentora_token');
-      localStorage.removeItem('rentora_refresh_token');
-      localStorage.removeItem('rentora_user');
       setUser(null);
       setRoles([]);
       setCustomerProfile(null);
@@ -204,7 +205,6 @@ export function AuthProvider({ children }) {
     });
     if (response.data?.data?.accessToken) {
       sessionStorage.setItem('rentora_token', response.data.data.accessToken);
-      localStorage.setItem('rentora_token', response.data.data.accessToken);
       setAccessToken(response.data.data.accessToken);
     }
     return response.data;
@@ -222,7 +222,7 @@ export function AuthProvider({ children }) {
       setUser(updatedUser);
       if (updatedCp) setCustomerProfile(updatedCp);
       if (updatedVp) setVendorProfile(updatedVp);
-      const savedStr = sessionStorage.getItem('rentora_user') || localStorage.getItem('rentora_user') || '{}';
+      const savedStr = sessionStorage.getItem('rentora_user') || '{}';
       const saved = JSON.parse(savedStr);
       const updatedStr = JSON.stringify({
         ...saved,
@@ -231,7 +231,6 @@ export function AuthProvider({ children }) {
         vendorProfile: updatedVp
       });
       sessionStorage.setItem('rentora_user', updatedStr);
-      localStorage.setItem('rentora_user', updatedStr);
     }
     return response.data;
   };
@@ -248,7 +247,6 @@ export function AuthProvider({ children }) {
       setVendorProfile(vp);
       if (token) {
         sessionStorage.setItem('rentora_token', token);
-        localStorage.setItem('rentora_token', token);
         setAccessToken(token);
       }
       const vendorPayloadStr = JSON.stringify({
@@ -258,7 +256,6 @@ export function AuthProvider({ children }) {
         vendorProfile: vp
       });
       sessionStorage.setItem('rentora_user', vendorPayloadStr);
-      localStorage.setItem('rentora_user', vendorPayloadStr);
     }
     return response.data;
   };

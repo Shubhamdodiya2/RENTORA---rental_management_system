@@ -19,6 +19,7 @@ import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
 import DocumentModal from '../../components/CustomerLayout/DocumentModal';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
+import { getTodayStr } from '../../utils/dateUtils';
 import './Booking.css';
 
 export default function BookingSuccess() {
@@ -39,8 +40,8 @@ export default function BookingSuccess() {
     customerPhone: user?.phone || '+91 98250 12345',
     deliveryAddress: '304, Shivalik Highstreet, Keshavbaug, Ahmedabad, Gujarat - 380015',
     deliveryType: 'doorstep',
-    startDate: '2026-09-18',
-    endDate: '2026-09-20',
+    startDate: getTodayStr(0),
+    endDate: getTodayStr(2),
     durationDays: 2,
     quantity: 1,
     subtotal: 3798,
@@ -50,7 +51,7 @@ export default function BookingSuccess() {
     totalPayable: 6497,
     paymentPlan: 'full',
     paymentMethod: 'upi',
-    bookingDate: '18 Sep 2026'
+    bookingDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
   };
 
   return (

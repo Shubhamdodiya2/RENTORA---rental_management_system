@@ -31,6 +31,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useWishlist } from '../../context/WishlistContext';
 import api from '../../services/api';
 import ProductReviews from '../../components/ProductReviews/ProductReviews';
+import { getTodayStr, isDateInPast, calculateDaysBetween } from '../../utils/dateUtils';
 import './ProductDetails.css';
 
 function formatApiProduct(p) {
@@ -165,8 +166,8 @@ export default function ProductDetails() {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [durationMode, setDurationMode] = useState('day'); // 'hour' | 'day' | 'week' | 'month'
   const [quantity, setQuantity] = useState(1);
-  const [startDate, setStartDate] = useState('2026-09-18');
-  const [endDate, setEndDate] = useState('2026-09-20');
+  const [startDate, setStartDate] = useState(() => getTodayStr(0));
+  const [endDate, setEndDate] = useState(() => getTodayStr(2));
   const [durationDays, setDurationDays] = useState(2);
   const isWishlisted = product ? isInWishlist(product.id) : false;
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'specs' | 'included' | 'terms'
@@ -554,6 +555,7 @@ export default function ProductDetails() {
                     <input
                       type="date"
                       value={startDate}
+                      min={getTodayStr(0)}
                       onChange={(e) => handleStartDateChange(e.target.value)}
                       className="w-full p-2 rounded-xl bg-white border border-[#A8DADC] text-xs font-bold text-[#1D3557] focus:outline-none focus:ring-1 focus:ring-[#E63946]"
                     />

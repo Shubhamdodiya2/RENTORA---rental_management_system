@@ -2,7 +2,7 @@
  * B2B Custom Quotation & Negotiation Controller
  */
 
-const { Quotation, QuotationItem, Product, VendorProfile, User } = require('../models');
+const { Quotation, QuotationItem, Product, ProductImage, VendorProfile, User } = require('../models');
 const QuotationService = require('../services/quotation.service');
 const ApiResponse = require('../utils/apiResponse');
 const { validateQuotationCreate, validateQuotationRespond } = require('../validations/quotation.validation');
@@ -42,8 +42,17 @@ class QuotationController {
       const quotations = await Quotation.findAll({
         where,
         include: [
-          { model: QuotationItem, as: 'items', include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'brand'] }] },
-          { model: VendorProfile, as: 'vendor', attributes: ['id', 'businessName', 'city'] },
+          {
+            model: QuotationItem,
+            as: 'items',
+            include: [{
+              model: Product,
+              as: 'product',
+              attributes: ['id', 'name', 'brand', 'pricePerDay', 'discountPrice'],
+              include: [{ model: ProductImage, as: 'images', attributes: ['imageUrl', 'isPrimary'] }]
+            }]
+          },
+          { model: VendorProfile, as: 'vendor', attributes: ['id', 'businessName', 'city', 'businessPhone', 'businessAddress'] },
           { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] }
         ],
         order: [['createdAt', 'DESC']]
@@ -70,7 +79,15 @@ class QuotationController {
     try {
       const quotation = await Quotation.findByPk(id, {
         include: [
-          { model: QuotationItem, as: 'items', include: [{ model: Product, as: 'product' }] },
+          {
+            model: QuotationItem,
+            as: 'items',
+            include: [{
+              model: Product,
+              as: 'product',
+              include: [{ model: ProductImage, as: 'images', attributes: ['imageUrl', 'isPrimary'] }]
+            }]
+          },
           { model: VendorProfile, as: 'vendor' },
           { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] }
         ]

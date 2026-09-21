@@ -1008,6 +1008,16 @@ class InvoiceService {
       3. For any billing support or queries, contact support@rentora.in.
     </div>
   </div>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('print') === 'true' || urlParams.get('download') === 'true') {
+        setTimeout(() => {
+          window.print();
+        }, 400);
+      }
+    });
+  </script>
 </body>
 </html>`;
   }

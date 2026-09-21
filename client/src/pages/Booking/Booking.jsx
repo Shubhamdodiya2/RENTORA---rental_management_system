@@ -18,6 +18,7 @@ import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
+import { getTodayStr, isDateInPast, calculateDaysBetween } from '../../utils/dateUtils';
 import './Booking.css';
 
 export default function Booking() {
@@ -35,8 +36,16 @@ export default function Booking() {
   const [deliveryType, setDeliveryType] = useState(bookingDraft.deliveryType || 'doorstep');
   const [pickupTime, setPickupTime] = useState(bookingDraft.pickupTime || '10:00 AM');
   const [returnTime, setReturnTime] = useState(bookingDraft.returnTime || '06:00 PM');
-  const [startDate, setStartDate] = useState(bookingDraft.startDate || '2026-09-18');
-  const [endDate, setEndDate] = useState(bookingDraft.endDate || '2026-09-20');
+  const [startDate, setStartDate] = useState(() => (
+    bookingDraft.startDate && !isDateInPast(bookingDraft.startDate)
+      ? bookingDraft.startDate
+      : getTodayStr(0)
+  ));
+  const [endDate, setEndDate] = useState(() => (
+    bookingDraft.endDate && !isDateInPast(bookingDraft.endDate)
+      ? bookingDraft.endDate
+      : getTodayStr(2)
+  ));
   const [quantity, setQuantity] = useState(bookingDraft.quantity || 1);
 
   const { subtotal, deposit, deliveryFee, total } = calculateTotal();
@@ -152,7 +161,14 @@ export default function Booking() {
                   <input
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    min={getTodayStr(0)}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      setStartDate(newStart);
+                      if (!endDate || endDate < newStart) {
+                        setEndDate(newStart);
+                      }
+                    }}
                     className="w-full p-3 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-bold text-[#1D3557]"
                   />
                 </div>
@@ -164,6 +180,7 @@ export default function Booking() {
                   <input
                     type="date"
                     value={endDate}
+                    min={startDate || getTodayStr(0)}
                     onChange={(e) => setEndDate(e.target.value)}
                     className="w-full p-3 rounded-xl bg-[#F1FAEE] border border-[#A8DADC] text-xs font-bold text-[#1D3557]"
                   />

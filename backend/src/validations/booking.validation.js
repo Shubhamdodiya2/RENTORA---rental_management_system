@@ -32,15 +32,15 @@ function validateBookingCreate(data) {
   }
 
   if (!errors.startDate && !errors.endDate) {
-    const start = new Date(`${data.startDate}T00:00:00Z`);
-    const end = new Date(`${data.endDate}T00:00:00Z`);
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
+    const now = new Date();
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const utcToday = now.toISOString().slice(0, 10);
+    const minAllowedDate = localToday < utcToday ? localToday : utcToday;
 
-    if (start < today) {
+    if (data.startDate < minAllowedDate) {
       errors.startDate = 'Start date cannot be in the past';
     }
-    if (end < start) {
+    if (data.endDate < data.startDate) {
       errors.endDate = 'End date cannot be earlier than start date';
     }
   }

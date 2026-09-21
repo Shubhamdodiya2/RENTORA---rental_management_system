@@ -47,16 +47,16 @@ async function seedDatabase() {
       console.log(`✅ Super Admin created: ${env.SEED_CONFIG.ADMIN_EMAIL}`);
     }
 
-    // 3. Seed Demo Customer User
-    console.log('[Seed] 3. Seeding Demo Customer...');
-    const customerPasswordHash = await bcrypt.hash(env.SEED_CONFIG.DEMO_CUSTOMER_PASSWORD, 12);
+    // 3. Seed Customer User
+    console.log('[Seed] 3. Seeding Customer...');
+    const customerPasswordHash = await bcrypt.hash('nnnnnnnnn', 12);
     const [customerUser, custCreated] = await User.findOrCreate({
-      where: { email: 'aarav.creator@rentora.in' },
+      where: { email: 'natasha@gmail.com' },
       defaults: {
-        fullName: 'Aarav Patel',
+        fullName: 'Natasha',
         passwordHash: customerPasswordHash,
-        phone: '+91 98251 12345',
-        avatarUrl: 'https://ui-avatars.com/api/?name=Aarav+Patel&background=1D3557&color=ffffff&bold=true',
+        phone: '+91 36982 14780',
+        avatarUrl: 'https://ui-avatars.com/api/?name=Natasha&background=1D3557&color=ffffff&bold=true',
         isActive: true,
         isVerified: true,
         mustChangePassword: false
@@ -76,18 +76,18 @@ async function seedDatabase() {
         kycBadge: 'Rentora Prime Member (Zero-Deposit Eligible)',
         trustScore: 98
       }, { transaction: t });
-      console.log('✅ Demo Customer created: aarav.creator@rentora.in');
+      console.log('✅ Customer created: natasha@gmail.com');
     }
 
-    // 4. Seed Demo Vendor User
-    console.log('[Seed] 4. Seeding Demo Vendor...');
-    const vendorPasswordHash = await bcrypt.hash(env.SEED_CONFIG.DEMO_VENDOR_PASSWORD, 12);
+    // 4. Seed Vendor User
+    console.log('[Seed] 4. Seeding Vendor...');
+    const vendorPasswordHash = await bcrypt.hash('ooooooooo', 12);
     const [vendorUser, vendCreated] = await User.findOrCreate({
-      where: { email: 'pixelcraft.owner@rentora.in' },
+      where: { email: 'om@gmail.com' },
       defaults: {
-        fullName: 'Hardik Shah',
+        fullName: 'om patel',
         passwordHash: vendorPasswordHash,
-        phone: '+91 98250 12345',
+        phone: '+91 14487 96323',
         avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
         isActive: true,
         isVerified: true,
@@ -101,32 +101,31 @@ async function seedDatabase() {
       await UserRole.create({ userId: vendorUser.id, roleId: vendorRole.id }, { transaction: t });
       vendorProfile = await VendorProfile.create({
         userId: vendorUser.id,
-        businessName: 'PixelCraft Rentals',
-        businessCategory: 'Cameras & Photography',
+        businessName: 'omshop',
+        businessCategory: 'Furniture & Workspaces',
         gstNumber: '24AAACP9988Z1Z2',
-        businessEmail: 'contact@pixelcraft.in',
-        businessPhone: '+91 98250 12345',
+        businessEmail: 'om@gmail.com',
+        businessPhone: '+91 14487 96323',
         businessAddress: 'Near SG Highway, Bodakdev',
         city: 'Ahmedabad',
         state: 'Gujarat',
         workingHours: '09:00 AM - 08:00 PM',
-        description: 'Gujarat premier cinema camera and prime lens rental house.',
+        description: 'Furniture & Workspaces rental shop in Ahmedabad.',
         verificationStatus: 'Approved',
         commissionRate: 10.00,
         approvedBy: adminUser.id,
         approvedAt: new Date()
       }, { transaction: t });
 
-      // Encrypt sample bank account data securely
       vendorProfile.setBankAccount({
         bankName: 'HDFC Bank',
-        accountHolder: 'PixelCraft Rentals',
+        accountHolder: 'omshop',
         accountNumber: '50200012345678',
         ifscCode: 'HDFC0000240',
-        upiId: 'pixelcraft@okhdfcbank'
+        upiId: 'omshop@okhdfcbank'
       });
       await vendorProfile.save({ transaction: t });
-      console.log('✅ Demo Vendor created: pixelcraft.owner@rentora.in');
+      console.log('✅ Vendor created: om@gmail.com');
     } else {
       vendorProfile = await VendorProfile.findOne({ where: { userId: vendorUser.id }, transaction: t });
     }

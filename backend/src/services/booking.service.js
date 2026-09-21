@@ -213,22 +213,27 @@ class BookingService {
       // 9.5 Generate Official Tax Invoice (status: ISSUED, paymentStatus: Pending)
       await InvoiceService.generateInvoiceForBooking(booking.id, { transaction: t });
 
-      if (!options.transaction) {
-        await t.commit();
-      }
-
       // 10. Fetch complete populated booking
-      const createdBooking = await Booking.findByPk(booking.id, {
+      const fetchOpts = {
         include: [
           { model: BookingItem, as: 'items', include: [{ model: Product, as: 'product' }] },
           { model: BookingStatusHistory, as: 'statusHistory' },
           { model: VendorProfile, as: 'vendor' },
           { model: User, as: 'customer', attributes: ['id', 'fullName', 'email', 'phone'] }
         ]
-      });
+      };
+      if (options.transaction) {
+        fetchOpts.transaction = t;
+      }
+
+      const createdBooking = await Booking.findByPk(booking.id, fetchOpts);
+
+      if (!options.transaction) {
+        await t.commit();
+      }
 
       // Attach raw OTP exclusively on the initial creation response for the customer
-      const plainBooking = createdBooking.toJSON();
+      const plainBooking = createdBooking ? createdBooking.toJSON() : booking.toJSON();
       plainBooking.initialCustomerOtp = rawOtp;
 
       return plainBooking;

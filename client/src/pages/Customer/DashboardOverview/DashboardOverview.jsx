@@ -43,7 +43,7 @@ export default function DashboardOverview() {
   const firstName = customerName.split(' ')[0] || 'Customer';
 
   useEffect(() => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
 
     const fetches = [
       fetch('/api/v1/products')

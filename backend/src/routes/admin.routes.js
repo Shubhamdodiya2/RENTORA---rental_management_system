@@ -38,6 +38,8 @@ router.delete('/admin-users/:id', AdminUserController.deleteAdminUser);
 // Vendor Management
 router.get('/vendors', AdminUserController.getVendors);
 router.patch('/vendors/:id/verification', AdminUserController.updateVendorVerification);
+router.put('/vendors/:id', AdminUserController.updateVendor);
+router.delete('/vendors/:id', AdminUserController.deleteVendor);
 
 // Complaint & Support Tickets Management
 router.get('/complaints', AdminComplaintController.getComplaints);

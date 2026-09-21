@@ -24,7 +24,7 @@ export default function Invoices() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
     if (!token) {
       setLoading(false);
       return;
@@ -205,7 +205,7 @@ export default function Invoices() {
                         </button>
                         <button
                           onClick={() => {
-                            const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+                            const token = sessionStorage.getItem('rentora_token');
                             const invId = inv.rawInvoice?.id || inv.id;
                             if (invId) {
                               const tokenQuery = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';

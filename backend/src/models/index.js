@@ -36,6 +36,7 @@ const AuditLog = require('./auditLog.model');
 const RefreshToken = require('./refreshToken.model');
 const PasswordResetToken = require('./passwordResetToken.model');
 const PaymentSubmission = require('./paymentSubmission.model');
+const Review = require('./review.model');
 
 // ==========================================
 // 1. IDENTITY, ROLES & AUTH TOKENS ASSOCIATIONS
@@ -213,6 +214,18 @@ PlatformSetting.belongsTo(User, { foreignKey: 'updatedBy', as: 'updater' });
 User.hasMany(AuditLog, { foreignKey: 'adminId', as: 'auditLogs' });
 AuditLog.belongsTo(User, { foreignKey: 'adminId', as: 'admin' });
 
+// ==========================================
+// 8. REVIEWS & RATINGS ASSOCIATIONS
+// ==========================================
+Product.hasMany(Review, { foreignKey: 'productId', as: 'reviews', onDelete: 'CASCADE' });
+Review.belongsTo(Product, { foreignKey: 'productId', as: 'product' });
+
+User.hasMany(Review, { foreignKey: 'customerId', as: 'reviews', onDelete: 'CASCADE' });
+Review.belongsTo(User, { foreignKey: 'customerId', as: 'customer' });
+
+Booking.hasOne(Review, { foreignKey: 'bookingId', as: 'review', onDelete: 'SET NULL' });
+Review.belongsTo(Booking, { foreignKey: 'bookingId', as: 'booking' });
+
 module.exports = {
   sequelize,
   User,
@@ -249,5 +262,6 @@ module.exports = {
   AuditLog,
   RefreshToken,
   PasswordResetToken,
-  PaymentSubmission
+  PaymentSubmission,
+  Review
 };

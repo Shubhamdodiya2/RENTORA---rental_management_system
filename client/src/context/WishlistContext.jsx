@@ -9,7 +9,7 @@ export function WishlistProvider({ children }) {
 
   const [wishlist, setWishlist] = useState(() => {
     try {
-      const saved = localStorage.getItem(storageKey) || localStorage.getItem('rentora_wishlist');
+      const saved = sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey) || sessionStorage.getItem('rentora_wishlist');
       return saved ? JSON.parse(saved) : [];
     } catch {
       return [];
@@ -18,12 +18,11 @@ export function WishlistProvider({ children }) {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  // Sync to local storage whenever wishlist changes
+  // Sync to session storage whenever wishlist changes
   useEffect(() => {
     try {
-      localStorage.setItem(storageKey, JSON.stringify(wishlist));
-      // Also keep fallback general key in sync
-      localStorage.setItem('rentora_wishlist', JSON.stringify(wishlist));
+      sessionStorage.setItem(storageKey, JSON.stringify(wishlist));
+      sessionStorage.setItem('rentora_wishlist', JSON.stringify(wishlist));
     } catch (e) {
       console.warn('[WishlistContext] Storage sync error:', e);
     }
@@ -32,11 +31,11 @@ export function WishlistProvider({ children }) {
   // When user logs in or switches, load their specific wishlist
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(storageKey);
+      const saved = sessionStorage.getItem(storageKey) || localStorage.getItem(storageKey);
       if (saved) {
         setWishlist(JSON.parse(saved));
       } else {
-        const legacy = localStorage.getItem('rentora_wishlist');
+        const legacy = sessionStorage.getItem('rentora_wishlist');
         if (legacy) {
           setWishlist(JSON.parse(legacy));
         }

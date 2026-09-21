@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import { FEATURED_PRODUCTS } from '../data/mockData';
+import { getTodayStr, isDateInPast, calculateDaysBetween } from '../utils/dateUtils';
 
 const BookingContext = createContext();
 
@@ -12,7 +13,15 @@ export function BookingProvider({ children }) {
       const saved = sessionStorage.getItem('rentora_booking_draft');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.product) return parsed;
+        if (parsed && parsed.product) {
+          // If saved draft dates are in the past, roll forward to valid dates
+          if (!parsed.startDate || isDateInPast(parsed.startDate)) {
+            const count = parsed.durationCount || 2;
+            parsed.startDate = getTodayStr(0);
+            parsed.endDate = getTodayStr(count);
+          }
+          return parsed;
+        }
       }
     } catch {
       // ignore JSON parse error
@@ -20,8 +29,8 @@ export function BookingProvider({ children }) {
     return {
       product: defaultProduct,
       durationMode: 'day', // 'hour' | 'day' | 'week' | 'month' | 'year'
-      startDate: '2026-09-18',
-      endDate: '2026-09-20',
+      startDate: getTodayStr(0),
+      endDate: getTodayStr(2),
       durationCount: 2, // 2 days
       quantity: 1,
       deliveryType: 'doorstep', // 'doorstep' | 'store_pickup'

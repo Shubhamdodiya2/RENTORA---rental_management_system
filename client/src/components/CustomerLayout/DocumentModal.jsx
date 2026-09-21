@@ -18,7 +18,7 @@ export default function DocumentModal({
     // Only attempt fetch if docId is supplied and initialData has no full snapshot
     if (docId && (!initialData || Object.keys(initialData).length === 0)) {
       setLoading(true);
-      const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+      const token = sessionStorage.getItem('rentora_token');
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(docId);
       
       let endpoint = null;
@@ -56,7 +56,7 @@ export default function DocumentModal({
   if (isOpen === false) return null;
 
   const handlePrint = () => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
     const tokenParam = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';
     if (docData && docData.id && (type === 'invoice' || docData.invoiceNumber)) {
       window.open(`/api/v1/invoices/${docData.id}/html${tokenParam}`, '_blank');

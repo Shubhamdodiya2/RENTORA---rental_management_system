@@ -25,6 +25,7 @@ import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import CheckoutStepper from '../../components/CheckoutStepper/CheckoutStepper';
 import { useBooking } from '../../context/BookingContext';
 import { useAuth } from '../../context/AuthContext';
+import { getTodayStr, isDateInPast } from '../../utils/dateUtils';
 import api from '../../services/api';
 import './Booking.css';
 
@@ -34,6 +35,13 @@ export default function Checkout() {
   const { user, isAuthenticated, vendorProfile } = useAuth();
 
   const product = bookingDraft.product;
+
+  const effectiveStartDate = (bookingDraft.startDate && !isDateInPast(bookingDraft.startDate))
+    ? bookingDraft.startDate
+    : getTodayStr(0);
+  const effectiveEndDate = (bookingDraft.endDate && !isDateInPast(bookingDraft.endDate) && bookingDraft.endDate >= effectiveStartDate)
+    ? bookingDraft.endDate
+    : getTodayStr(bookingDraft.durationCount || 2);
 
   const isOwnerVendor = Boolean(
     (user && product?.vendor?.userId && user.id === product.vendor.userId) ||
@@ -119,7 +127,7 @@ export default function Checkout() {
     setIsProcessing(true);
 
     try {
-      const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+      const token = sessionStorage.getItem('rentora_token');
       if (!token) {
         alert("Authentication required. Please sign in to confirm your booking.");
         navigate('/login', { state: { from: '/checkout' } });
@@ -134,8 +142,8 @@ export default function Checkout() {
             quantity: bookingDraft.quantity || 1
           }
         ],
-        startDate: bookingDraft.startDate || '2026-09-18',
-        endDate: bookingDraft.endDate || '2026-09-20',
+        startDate: effectiveStartDate,
+        endDate: effectiveEndDate,
         durationMode: bookingDraft.durationMode || 'day',
         deliveryType: bookingDraft.deliveryType || 'doorstep',
         deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : (product.vendor?.address || 'Store Pickup'),
@@ -172,8 +180,8 @@ export default function Checkout() {
         customerPhone: customerPhone || user?.phone || '+91 98250 12345',
         deliveryAddress: bookingDraft.deliveryType === 'doorstep' ? deliveryAddress : (product.vendor?.address || 'Store Pickup'),
         deliveryType: bookingDraft.deliveryType || 'doorstep',
-        startDate: bookingDraft.startDate || '2026-09-18',
-        endDate: bookingDraft.endDate || '2026-09-20',
+        startDate: effectiveStartDate,
+        endDate: effectiveEndDate,
         durationDays: bookingDraft.durationCount || 2,
         quantity: bookingDraft.quantity || 1,
         subtotal,
@@ -196,7 +204,14 @@ export default function Checkout() {
       navigate('/booking/success');
     } catch (err) {
       console.error('[Checkout Error]:', err);
-      const errMsg = err.response?.data?.message || err.message || 'An error occurred while creating your rental booking.';
+      const errData = err.response?.data;
+      let errMsg = errData?.message || err.message || 'An error occurred while creating your rental booking.';
+      if (errData?.errors && typeof errData.errors === 'object') {
+        const errorList = Object.entries(errData.errors).map(([k, v]) => `${v || k}`);
+        if (errorList.length > 0) {
+          errMsg = `${errMsg}:\n• ${errorList.join('\n• ')}`;
+        }
+      }
       alert(errMsg);
       setIsProcessing(false);
     }
@@ -604,7 +619,7 @@ export default function Checkout() {
                 <div className="flex-1">
                   <h4 className="font-bold text-xs text-[#1D3557] line-clamp-1">{product.title}</h4>
                   <div className="text-[10px] text-[#457B9D] mt-0.5">
-                    {bookingDraft.startDate} → {bookingDraft.endDate}
+                    {effectiveStartDate} → {effectiveEndDate}
                   </div>
                 </div>
               </div>

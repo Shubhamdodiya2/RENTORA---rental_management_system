@@ -237,7 +237,7 @@ class AuthController {
    */
   static async refreshToken(req, res) {
     try {
-      const rawRefreshToken = req.cookies.rentora_rt || req.body.refreshToken;
+      const rawRefreshToken = req.body?.refreshToken || req.cookies?.rentora_rt;
 
       if (!rawRefreshToken) {
         return ApiResponse.error(res, 'Refresh token is required', null, 400);
@@ -290,7 +290,7 @@ class AuthController {
    */
   static async logout(req, res) {
     try {
-      const rawRefreshToken = req.cookies.rentora_rt || req.body.refreshToken;
+      const rawRefreshToken = req.body?.refreshToken || req.cookies?.rentora_rt;
       if (rawRefreshToken) {
         await TokenService.revokeRefreshToken(rawRefreshToken);
       }

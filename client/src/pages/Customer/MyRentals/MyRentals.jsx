@@ -39,7 +39,7 @@ export default function MyRentals() {
   const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
 
     if (token) {
       fetch('/api/v1/bookings/my', {

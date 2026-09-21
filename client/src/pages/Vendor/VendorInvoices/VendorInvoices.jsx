@@ -64,7 +64,7 @@ export default function VendorInvoices() {
   }, [contextInvoices]);
 
   useEffect(() => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
     if (token) {
       fetch('/api/v1/invoices/vendor', {
         headers: { Authorization: `Bearer ${token}` }
@@ -234,7 +234,7 @@ export default function VendorInvoices() {
                           </button>
                           <button
                             onClick={() => {
-                              const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+                              const token = sessionStorage.getItem('rentora_token');
                               const invId = (inv.rawInvoice && inv.rawInvoice.id) ? inv.rawInvoice.id : inv.id;
                               const printUrl = `/api/v1/invoices/${invId}/html${token ? `?token=${encodeURIComponent(token)}` : ''}`;
                               window.open(printUrl, '_blank');

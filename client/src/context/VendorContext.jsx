@@ -66,7 +66,7 @@ export function VendorProvider({ children }) {
 
   // Fetch live vendor data from backend APIs
   const fetchVendorData = useCallback(async () => {
-    const token = localStorage.getItem('rentora_token') || sessionStorage.getItem('rentora_token');
+    const token = sessionStorage.getItem('rentora_token');
     if (!token) return;
 
     setIsLoading(true);
