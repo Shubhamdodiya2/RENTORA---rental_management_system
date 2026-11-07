@@ -39,6 +39,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Documentation & Requirements
+RENTORA_BACKEND_REQUIREMENTS.md
+RENTORA_MASTER_SYSTEM_GUIDE.md
+
 # System & IDE
 .DS_Store
 .idea/
