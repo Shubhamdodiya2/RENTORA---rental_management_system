@@ -99,16 +99,20 @@ export default function AddEditProduct() {
 
   useEffect(() => {
     if (isEditMode && existingProduct) {
+      const matchedCat = CATEGORIES.find(
+        (c) => c.name === existingProduct.category || c.id === existingProduct.categorySlug || c.id === existingProduct.categoryId
+      );
       setFormData({
         name: existingProduct.name || '',
         sku: existingProduct.sku || '',
-        category: existingProduct.category || CATEGORIES[0],
+        categoryId: matchedCat ? matchedCat.id : (existingProduct.categoryId || existingProduct.categorySlug || 'cameras'),
+        category: matchedCat ? matchedCat.name : (existingProduct.category || 'Cameras & Photography'),
         brand: existingProduct.brand || '',
         pricePerDay: existingProduct.pricePerDay || '',
         discountPrice: existingProduct.discountPrice || '',
         securityDeposit: existingProduct.securityDeposit || '',
-        stock: existingProduct.stock || 1,
-        minStockAlert: existingProduct.minStockAlert || 1,
+        stock: existingProduct.stock ?? 1,
+        minStockAlert: existingProduct.minStockAlert ?? 1,
         status: existingProduct.status || 'Active',
         image: existingProduct.image || '',
         description: existingProduct.description || '',
@@ -134,26 +138,27 @@ export default function AddEditProduct() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const stockNum = Number(formData.stock) || 1;
     const productPayload = {
       ...formData,
       categoryId: formData.categoryId || 'cameras',
       pricePerDay: Number(formData.pricePerDay),
       discountPrice: formData.discountPrice ? Number(formData.discountPrice) : null,
       securityDeposit: Number(formData.securityDeposit) || 0,
-      stock: Number(formData.stock),
-      availableStock: Number(formData.stock),
-      reservedStock: 0,
-      minStockAlert: Number(formData.minStockAlert),
+      stock: stockNum,
+      totalStock: stockNum,
+      availableStock: stockNum,
+      minStockAlert: Number(formData.minStockAlert) || 1,
       tags: formData.tags ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean) : []
     };
 
     if (isEditMode) {
-      updateProduct(id, productPayload);
+      await updateProduct(id, productPayload);
     } else {
-      addProduct(productPayload);
+      await addProduct(productPayload);
     }
 
     navigate('/vendor/products');

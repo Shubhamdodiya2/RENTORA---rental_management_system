@@ -13,7 +13,9 @@ const {
   Inventory, 
   InventoryTransaction, 
   VendorProfile, 
-  User 
+  User,
+  RentalPayment,
+  EscrowDeposit
 } = require('../models');
 const PricingService = require('./pricing.service');
 const AvailabilityService = require('./availability.service');
@@ -99,24 +101,40 @@ class BookingService {
 
         verifiedProducts.push({
           product,
-          quantity: item.quantity
+          quantity: item.quantity,
+          customRate: item.customRate !== undefined ? Number(item.customRate) : undefined
         });
       }
 
-      // 3. Calculate exact master financial breakdown via PricingService
-      const pricingItems = verifiedProducts.map(vp => ({
-        product: vp.product,
-        quantity: vp.quantity,
-        durationMode,
-        durationCount: durationDays
-      }));
+      // 3. Calculate exact master financial breakdown (or apply custom negotiated quote financials)
+      let pricing;
+      if (payload.customFinancials) {
+        const cf = payload.customFinancials;
+        pricing = {
+          itemSubtotal: Number(cf.subtotal),
+          pureRentalAmount: Number(cf.subtotal),
+          taxAmount: Number(cf.taxAmount || 0),
+          escrowDepositAmount: Number(cf.depositAmount || 0),
+          deliveryFee: Number(cf.deliveryFee || 0),
+          insuranceAmount: 0,
+          discountAmount: Number(cf.discountAmount || 0),
+          totalCustomerPayable: Number(cf.totalAmount)
+        };
+      } else {
+        const pricingItems = verifiedProducts.map(vp => ({
+          product: vp.product,
+          quantity: vp.quantity,
+          durationMode,
+          durationCount: durationDays
+        }));
 
-      const pricing = PricingService.calculateBookingFinancials({
-        items: pricingItems,
-        deliveryType,
-        deliveryFee: deliveryType === 'doorstep' ? 250.00 : 0.00,
-        insuranceRate: 0.02
-      });
+        pricing = PricingService.calculateBookingFinancials({
+          items: pricingItems,
+          deliveryType,
+          deliveryFee: deliveryType === 'doorstep' ? 250.00 : 0.00,
+          insuranceRate: 0.02
+        });
+      }
 
       // 4. Generate unique identifiers & secure salted handover OTP (zero-plaintext storage)
       const bookingNumber = generateBookingNumber();
@@ -127,7 +145,10 @@ class BookingService {
         otpMetadata,
         clientNotes: rentalNotes || '',
         pricingBreakdown: pricing,
-        customerRefundUpi: payload.customerRefundUpi || null
+        customerRefundUpi: payload.customerRefundUpi || null,
+        quotationId: payload.quotationId || null,
+        quotationNumber: payload.quotationNumber || null,
+        isQuotationOrder: Boolean(payload.quotationId || payload.customFinancials)
       };
 
       // 5. Create Booking record (Step 1: BOOKING_CONFIRMED)
@@ -156,9 +177,9 @@ class BookingService {
         rentalNotes: JSON.stringify(bookingMetadata)
       }, { transaction: t });
 
-      // 6. Create BookingItem rows
+      // 6. Create BookingItem rows (applying custom rate if provided)
       const bookingItemRows = verifiedProducts.map(vp => {
-        const unitRate = vp.product.discountPrice || vp.product.pricePerDay;
+        const unitRate = vp.customRate !== undefined ? vp.customRate : (vp.product.discountPrice || vp.product.pricePerDay);
         const subtotal = Number(unitRate) * vp.quantity * durationDays;
         return {
           bookingId: booking.id,
@@ -171,8 +192,10 @@ class BookingService {
       });
       await BookingItem.bulkCreate(bookingItemRows, { transaction: t });
 
-      // 7. Create initial Order linked to booking with explicit Pending Payment status
-      await Order.create({
+      const isQuotation = Boolean(payload.quotationId || payload.quotationNumber || payload.customFinancials);
+
+      // 7. Create initial Order linked to booking
+      const createdOrder = await Order.create({
         orderNumber: `ORD-${bookingNumber.replace('BKG-', '')}`,
         customerId,
         vendorId,
@@ -182,9 +205,36 @@ class BookingService {
         deliveryFee: pricing.deliveryFee,
         depositAmount: pricing.escrowDepositAmount,
         totalAmount: pricing.totalCustomerPayable,
-        orderStatus: 'Pending',
-        paymentStatus: 'Pending' // Explicitly Pending until Phase 5 Payment Gateway integration
+        orderStatus: isQuotation ? 'Pending' : 'Confirmed',
+        paymentStatus: isQuotation ? 'Pending' : 'Success'
       }, { transaction: t });
+
+      // If standard checkout (not quotation), record payment and escrow deposit upfront
+      if (!isQuotation) {
+        await RentalPayment.create({
+          transactionId: payload.utrNumber || `TXN-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          orderId: createdOrder.id,
+          bookingId: booking.id,
+          customerId,
+          vendorId,
+          amount: pricing.itemSubtotal + pricing.taxAmount + pricing.deliveryFee,
+          paymentMethod: ['UPI', 'Card', 'NetBanking', 'Wallet'].includes(payload.paymentMethod) ? payload.paymentMethod : 'UPI',
+          paymentStatus: 'Success',
+          paidAt: new Date()
+        }, { transaction: t });
+
+        if (pricing.escrowDepositAmount > 0) {
+          await EscrowDeposit.create({
+            orderId: createdOrder.id,
+            bookingId: booking.id,
+            customerId,
+            vendorId,
+            depositAmount: pricing.escrowDepositAmount,
+            status: 'HELD',
+            heldAt: new Date()
+          }, { transaction: t });
+        }
+      }
 
       // 8. Create Status History entry for Step 1
       await BookingStatusHistory.create({
@@ -192,7 +242,9 @@ class BookingService {
         status: 'BOOKING_CONFIRMED',
         stepNumber: 1,
         title: LIFECYCLE_STEPS[1].label,
-        notes: 'Booking created and confirmed by customer checkout (Payment Pending)',
+        notes: isQuotation
+          ? `Booking generated from accepted Quotation #${payload.quotationNumber || ''} (Awaiting Vendor Acceptance & Customer Payment)`
+          : 'Booking created and payment confirmed via customer checkout',
         performedBy: customerId
       }, { transaction: t });
 

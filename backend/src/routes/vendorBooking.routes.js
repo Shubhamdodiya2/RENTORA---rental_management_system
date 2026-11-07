@@ -21,6 +21,9 @@ router.get('/:id', VendorBookingController.getVendorBookingById);
 // PATCH /api/v1/vendor/bookings/:id/transition - Advance lifecycle step
 router.patch('/:id/transition', VendorBookingController.transitionBookingStep);
 
+// PATCH /api/v1/vendor/bookings/:id/accept-order - Accept and confirm rental order
+router.patch('/:id/accept-order', VendorBookingController.acceptOrder);
+
 // POST /api/v1/vendor/bookings/:id/verify-otp - Verify handover OTP (Step 4)
 router.post('/:id/verify-otp', VendorBookingController.verifyHandoverOtp);
 

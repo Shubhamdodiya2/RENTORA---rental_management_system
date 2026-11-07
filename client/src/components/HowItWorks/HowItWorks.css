@@ -5,15 +5,16 @@
   border-radius: 1.5rem;
   border: 1px solid rgba(168, 218, 220, 0.4);
   box-shadow: 0 10px 25px -5px rgba(29, 53, 87, 0.05);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
 .how-it-works-step-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 35px -10px rgba(29, 53, 87, 0.12);
+  transform: translateY(-6px);
+  border-color: rgba(230, 57, 70, 0.4);
+  box-shadow: 0 22px 40px -10px rgba(29, 53, 87, 0.14);
 }
 
 .how-it-works-banner {
@@ -22,4 +23,10 @@
   padding: 2rem;
   color: #ffffff;
   box-shadow: 0 20px 40px -10px rgba(29, 53, 87, 0.25);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.how-it-works-banner:hover {
+  box-shadow: 0 25px 50px -10px rgba(29, 53, 87, 0.32);
+}
+

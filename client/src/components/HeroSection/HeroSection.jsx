@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { 
   Search, 
   Calendar, 
@@ -25,34 +26,54 @@ export default function HeroSection() {
 
   return (
     <section id="home" className="hero-section pt-6 pb-16 lg:pt-10 lg:pb-24">
-      {/* Background Decorative Gradient Orbs */}
+      {/* Background Decorative Gradient Orbs with subtle breathing animation */}
       <div className="hero-glow-blob-1" />
       <div className="hero-glow-blob-2" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           
-          {/* Left Column */}
+          {/* Left Column with smooth staggered entry */}
           <div className="lg:col-span-7 space-y-6">
             
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#A8DADC]/40 border border-[#A8DADC] text-[#1D3557] text-xs font-semibold">
-              <Sparkles size={14} className="text-[#E63946]" />
+            <motion.div 
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#A8DADC]/40 border border-[#A8DADC] text-[#1D3557] text-xs font-semibold shadow-xs"
+            >
+              <Sparkles size={14} className="text-[#E63946] animate-pulse" />
               <span>India's Most Trusted Multi-Vendor Rental Marketplace</span>
-            </div>
+            </motion.div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#1D3557] tracking-tight leading-[1.15] font-['Sora']">
+            <motion.h1 
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.1, ease: "easeOut" }}
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#1D3557] tracking-tight leading-[1.15] font-['Sora']"
+            >
               Everything You Need. <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#E63946] via-[#D62839] to-[#457B9D]">
                 Ready to Rent.
               </span>
-            </h1>
+            </motion.h1>
 
-            <p className="text-base sm:text-lg text-[#457B9D] leading-relaxed max-w-2xl font-normal">
+            <motion.p 
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.2, ease: "easeOut" }}
+              className="text-base sm:text-lg text-[#457B9D] leading-relaxed max-w-2xl font-normal"
+            >
               Discover and rent high-end cameras, gaming consoles, luxury vehicles, party sound systems, tools, and designer attire from <span className="font-semibold text-[#1D3557]">1,200+ verified local rental businesses</span>.
-            </p>
+            </motion.p>
 
             {/* Search Widget */}
-            <div className="hero-search-card p-3 sm:p-4 space-y-3">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.28, ease: "easeOut" }}
+              className="hero-search-card p-3 sm:p-4 space-y-3"
+            >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
                 
                 <div className="px-3 py-2">
@@ -130,16 +151,21 @@ export default function HeroSection() {
                       navigate('/products');
                     }
                   }}
-                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white font-bold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#E63946] hover:bg-[#D62839] active:scale-95 text-white font-bold text-sm btn-primary-glow flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <span>Explore Rentals</span>
                   <ArrowRight size={16} />
                 </button>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Popular Searches */}
-            <div className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[#457B9D]">
+            {/* Popular Searches with interactive pill hover */}
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.38, ease: "easeOut" }}
+              className="flex flex-wrap items-center gap-2 pt-1 text-xs text-[#457B9D]"
+            >
               <span className="font-semibold flex items-center gap-1 text-[#1D3557]">
                 <TrendingUp size={13} className="text-[#E63946]" /> Popular:
               </span>
@@ -149,15 +175,20 @@ export default function HeroSection() {
                   onClick={() => {
                     navigate(`/products?search=${encodeURIComponent(tag)}`);
                   }}
-                  className="px-2.5 py-1 rounded-full bg-white hover:bg-[#A8DADC]/40 border border-[#A8DADC]/60 text-[#1D3557] font-medium transition-colors cursor-pointer"
+                  className="px-2.5 py-1 rounded-full bg-white hover:bg-[#A8DADC]/40 hover:-translate-y-0.5 active:scale-95 border border-[#A8DADC]/60 text-[#1D3557] font-medium transition-all shadow-xs cursor-pointer"
                 >
                   {tag}
                 </button>
               ))}
-            </div>
+            </motion.div>
 
             {/* Trust Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-[#A8DADC]/30">
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.55, delay: 0.46, ease: "easeOut" }}
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-[#A8DADC]/30"
+            >
               {TRUST_STATS.map((stat, i) => (
                 <div key={i} className="space-y-0.5">
                   <div className="text-xl sm:text-2xl font-extrabold text-[#1D3557] font-['Sora']">
@@ -168,20 +199,25 @@ export default function HeroSection() {
                   </div>
                 </div>
               ))}
-            </div>
+            </motion.div>
 
           </div>
 
-          {/* Right Column: Hero Visual Showcase */}
-          <div className="lg:col-span-5 relative">
+          {/* Right Column: Hero Visual Showcase with smooth floating badges */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.25, ease: "easeOut" }}
+            className="lg:col-span-5 relative"
+          >
             <div className="relative mx-auto max-w-md lg:max-w-none">
               
-              <div className="hero-card-image-box">
+              <div className="hero-card-image-box group cursor-pointer" onClick={() => navigate('/products')}>
                 <div className="relative h-80 sm:h-96 w-full">
                   <img
                     src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1000&q=80"
                     alt="Rentora Cinema Equipment Rental"
-                    className="w-full h-full object-cover object-center"
+                    className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1D3557] via-[#1D3557]/30 to-transparent" />
                   
@@ -189,7 +225,8 @@ export default function HeroSection() {
                     <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-md text-[#1D3557] text-xs font-bold shadow-md">
                       📸 Cinema & Photo
                     </span>
-                    <span className="px-3 py-1 rounded-full bg-[#E63946] text-white text-xs font-bold flex items-center gap-1 shadow-md">
+                    <span className="px-3 py-1 rounded-full bg-[#E63946] text-white text-xs font-bold flex items-center gap-1.5 shadow-md">
+                      <span className="w-2 h-2 rounded-full bg-white animate-ping" />
                       <Zap size={12} fill="currentColor" /> Instant Booking
                     </span>
                   </div>
@@ -210,7 +247,7 @@ export default function HeroSection() {
                         <span className="text-2xl font-extrabold text-[#F1FAEE]">₹1,899</span>
                         <span className="text-xs text-[#A8DADC]"> / day</span>
                       </div>
-                      <span className="px-3 py-1.5 rounded-xl bg-white text-[#1D3557] font-bold text-xs hover:bg-[#F1FAEE] transition-colors">
+                      <span className="px-3 py-1.5 rounded-xl bg-white text-[#1D3557] font-bold text-xs group-hover:bg-[#F1FAEE] transition-colors shadow-sm">
                         Reserve Now
                       </span>
                     </div>
@@ -218,8 +255,8 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              {/* Floating Reassurance Badge 1 */}
-              <div className="absolute -top-6 -left-6 bg-white p-3 rounded-2xl shadow-xl border border-[#A8DADC]/50 flex items-center gap-3 animate-bounce duration-1000 hidden sm:flex">
+              {/* Smooth Floating Reassurance Badge 1 */}
+              <div className="hero-float-badge-1 absolute -top-6 -left-6 bg-white p-3 rounded-2xl shadow-xl border border-[#A8DADC]/50 flex items-center gap-3 hidden sm:flex cursor-default z-20">
                 <div className="w-10 h-10 rounded-xl bg-[#E63946]/10 flex items-center justify-center text-[#E63946]">
                   <ShieldCheck size={22} />
                 </div>
@@ -229,8 +266,8 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              {/* Floating Reassurance Badge 2 */}
-              <div className="absolute -bottom-6 -right-6 bg-white p-3.5 rounded-2xl shadow-xl border border-[#A8DADC]/50 flex items-center gap-3 hidden sm:flex">
+              {/* Smooth Floating Reassurance Badge 2 */}
+              <div className="hero-float-badge-2 absolute -bottom-6 -right-6 bg-white p-3.5 rounded-2xl shadow-xl border border-[#A8DADC]/50 flex items-center gap-3 hidden sm:flex cursor-default z-20">
                 <div className="w-10 h-10 rounded-xl bg-[#A8DADC]/30 flex items-center justify-center text-[#1D3557]">
                   <Clock size={22} />
                 </div>
@@ -241,10 +278,11 @@ export default function HeroSection() {
               </div>
 
             </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>
     </section>
   );
 }
+

@@ -20,4 +20,7 @@ router.get('/my-submissions', authenticate, paymentController.getMySubmissions);
 router.get('/booking/:bookingId', authenticate, paymentController.getBookingPaymentDetails);
 router.get('/proof/:submissionId', authenticate, paymentController.streamPaymentProof);
 
+// Customer Direct / UPI Payment for Booking
+router.post('/pay-booking', authenticate, paymentController.payBooking);
+
 module.exports = router;

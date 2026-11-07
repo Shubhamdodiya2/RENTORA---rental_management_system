@@ -2,7 +2,7 @@
  * Customer Booking Controller
  */
 
-const { Booking, BookingItem, BookingStatusHistory, Product, VendorProfile, Order, User } = require('../models');
+const { Booking, BookingItem, BookingStatusHistory, Product, ProductImage, VendorProfile, Order, User } = require('../models');
 const BookingService = require('../services/booking.service');
 const ApiResponse = require('../utils/apiResponse');
 const { validateBookingCreate, validateBookingCancel } = require('../validations/booking.validation');
@@ -23,14 +23,13 @@ class BookingController {
       return ApiResponse.success(res, 'Booking created and confirmed successfully', booking, 201);
     } catch (error) {
       console.error('[Create Booking Error]:', error);
-      const status = error.statusCode || 500;
-      return ApiResponse.error(res, error.message || 'Failed to create booking', error.details || null, status);
+      return ApiResponse.error(res, error.message || 'Failed to create booking', null, error.statusCode || 500);
     }
   }
 
   /**
-   * GET /api/v1/bookings
-   * List customer's own rental bookings
+   * GET /api/v1/bookings/my
+   * Authenticated customer lists their bookings with pagination & status filters
    */
   static async getCustomerBookings(req, res) {
     const { status, page = 1, limit = 10 } = req.query;
@@ -48,12 +47,26 @@ class BookingController {
           { 
             model: BookingItem, 
             as: 'items', 
-            include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'slug', 'brand'] }] 
+            include: [{ 
+              model: Product, 
+              as: 'product', 
+              attributes: ['id', 'name', 'slug', 'brand'],
+              include: [{
+                model: ProductImage,
+                as: 'images',
+                attributes: ['id', 'imageUrl', 'isPrimary', 'displayOrder']
+              }]
+            }] 
           },
           { 
             model: VendorProfile, 
             as: 'vendor', 
             attributes: ['id', 'businessName', 'city', 'businessPhone'] 
+          },
+          {
+            model: Order,
+            as: 'order',
+            attributes: ['id', 'orderNumber', 'orderStatus', 'paymentStatus', 'totalAmount', 'subtotal', 'taxAmount', 'depositAmount']
           }
         ],
         distinct: true,
@@ -62,7 +75,21 @@ class BookingController {
         offset
       });
 
-      return ApiResponse.paginated(res, 'Customer bookings retrieved successfully', rows, count, pageNum, limitNum);
+      const formattedRows = rows.map((b) => {
+        const json = b.toJSON ? b.toJSON() : b;
+        if (json.items) {
+          json.items = json.items.map((it) => {
+            if (it.product) {
+              const primary = (it.product.images && it.product.images.find(img => img.isPrimary)) || (it.product.images && it.product.images[0]);
+              it.product.primaryImage = primary ? primary.imageUrl : null;
+            }
+            return it;
+          });
+        }
+        return json;
+      });
+
+      return ApiResponse.paginated(res, 'Customer bookings retrieved successfully', formattedRows, count, pageNum, limitNum);
 
     } catch (error) {
       console.error('[Get Customer Bookings Error]:', error);
@@ -83,7 +110,15 @@ class BookingController {
           { 
             model: BookingItem, 
             as: 'items', 
-            include: [{ model: Product, as: 'product' }] 
+            include: [{ 
+              model: Product, 
+              as: 'product',
+              include: [{
+                model: ProductImage,
+                as: 'images',
+                attributes: ['id', 'imageUrl', 'isPrimary', 'displayOrder']
+              }]
+            }] 
           },
           { 
             model: BookingStatusHistory, 
@@ -93,12 +128,16 @@ class BookingController {
           { 
             model: VendorProfile, 
             as: 'vendor', 
-            attributes: ['id', 'businessName', 'city', 'businessPhone', 'businessEmail', 'businessAddress'] 
+            attributes: ['id', 'businessName', 'city', 'businessPhone', 'businessEmail', 'businessAddress', 'upiId', 'qrCodeUrl'] 
           },
           { 
             model: User, 
             as: 'customer', 
             attributes: ['id', 'fullName', 'email', 'phone'] 
+          },
+          {
+            model: Order,
+            as: 'order'
           }
         ],
         order: [[{ model: BookingStatusHistory, as: 'statusHistory' }, 'stepNumber', 'ASC']]
@@ -117,7 +156,18 @@ class BookingController {
         return ApiResponse.error(res, 'Forbidden: You do not have permission to view this booking', null, 403);
       }
 
-      return ApiResponse.success(res, 'Booking details retrieved successfully', booking);
+      const json = booking.toJSON ? booking.toJSON() : booking;
+      if (json.items) {
+        json.items = json.items.map((it) => {
+          if (it.product) {
+            const primary = (it.product.images && it.product.images.find(img => img.isPrimary)) || (it.product.images && it.product.images[0]);
+            it.product.primaryImage = primary ? primary.imageUrl : null;
+          }
+          return it;
+        });
+      }
+
+      return ApiResponse.success(res, 'Booking details retrieved successfully', json);
 
     } catch (error) {
       console.error('[Get Booking Detail Error]:', error);

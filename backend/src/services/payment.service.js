@@ -697,6 +697,153 @@ class PaymentService {
       originalName: submission.proofFileOriginalName
     };
   }
+
+  /**
+   * Customer Completes Direct/UPI Payment for a Booking/Order
+   */
+  static async payBooking(customerId, payload) {
+    const { bookingId, paymentMethod = 'UPI', utrNumber, amountPaid, payerUpiId } = payload;
+
+    if (!bookingId) {
+      const err = new Error('Booking ID is required');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const t = await sequelize.transaction();
+
+    try {
+      const booking = await Booking.findOne({
+        where: { id: bookingId, customerId },
+        include: [
+          { model: Order, as: 'order' },
+          { model: VendorProfile, as: 'vendor' }
+        ],
+        transaction: t,
+        lock: t.LOCK.UPDATE
+      });
+
+      if (!booking) {
+        const err = new Error('Rental booking not found or does not belong to your account');
+        err.statusCode = 404;
+        throw err;
+      }
+
+      let order = booking.order;
+      if (!order) {
+        order = await Order.findOne({ where: { bookingId: booking.id }, transaction: t, lock: t.LOCK.UPDATE });
+      }
+
+      if (!order) {
+        order = await Order.create({
+          orderNumber: `ORD-${booking.bookingNumber.replace('BKG-', '')}`,
+          customerId,
+          vendorId: booking.vendorId,
+          bookingId: booking.id,
+          subtotal: Number(booking.rentalAmount),
+          taxAmount: Number(booking.taxAmount),
+          deliveryFee: Number(booking.deliveryFee || 0),
+          depositAmount: Number(booking.depositAmount || 0),
+          totalAmount: Number(booking.totalAmount),
+          orderStatus: 'Confirmed',
+          paymentStatus: 'Success'
+        }, { transaction: t });
+      } else {
+        order.paymentStatus = 'Success';
+        order.orderStatus = 'Confirmed';
+        await order.save({ transaction: t });
+      }
+
+      // Update Booking metadata
+      let notesObj = {};
+      try { notesObj = JSON.parse(booking.rentalNotes || '{}'); } catch (e) {}
+      notesObj.payment = {
+        paidAt: new Date().toISOString(),
+        method: paymentMethod,
+        utrNumber: utrNumber || `UTR${Date.now()}`,
+        amount: amountPaid || order.totalAmount
+      };
+      booking.rentalNotes = JSON.stringify(notesObj);
+      await booking.save({ transaction: t });
+
+      // Create RentalPayment ledger
+      const safeTxnId = utrNumber ? `UTR-${utrNumber}` : `TXN-${booking.bookingNumber}-${Date.now()}`;
+      const rentalPaymentAmount = Number((Number(booking.rentalAmount) + Number(booking.taxAmount || 0) + Number(booking.deliveryFee || 0)).toFixed(2));
+
+      await RentalPayment.create({
+        transactionId: safeTxnId,
+        orderId: order.id,
+        bookingId: booking.id,
+        customerId,
+        vendorId: booking.vendorId,
+        amount: rentalPaymentAmount,
+        currency: 'INR',
+        paymentMethod: ['UPI', 'Card', 'NetBanking', 'Wallet'].includes(paymentMethod) ? paymentMethod : 'UPI',
+        paymentStatus: 'Success',
+        gatewayResponse: {
+          utrNumber: utrNumber || null,
+          payerUpiId: payerUpiId || null
+        },
+        paidAt: new Date()
+      }, { transaction: t });
+
+      // Create EscrowDeposit if applicable
+      if (Number(booking.depositAmount) > 0) {
+        const existingEscrow = await EscrowDeposit.findOne({ where: { orderId: order.id }, transaction: t });
+        if (!existingEscrow) {
+          await EscrowDeposit.create({
+            orderId: order.id,
+            bookingId: booking.id,
+            customerId,
+            vendorId: booking.vendorId,
+            depositAmount: Number(booking.depositAmount),
+            penaltyDeductions: 0.00,
+            refundedAmount: 0.00,
+            status: 'Held'
+          }, { transaction: t });
+        }
+      }
+
+      // Sync Invoice to PAID
+      await InvoiceService.syncInvoicePaymentStatus(
+        booking.id,
+        'Success',
+        utrNumber || 'UPI_DIRECT',
+        { id: customerId, fullName: 'Customer Online Payment' },
+        { transaction: t }
+      ).catch((e) => console.warn('Invoice sync notice:', e.message));
+
+      // Notifications
+      await Notification.create({
+        recipientId: customerId,
+        title: 'Payment Successful!',
+        message: `Your payment of ₹${order.totalAmount} for Booking #${booking.bookingNumber} was confirmed. Your rental reservation is officially confirmed.`,
+        type: 'PAYMENT',
+        metadata: { bookingId: booking.id, orderId: order.id }
+      }, { transaction: t }).catch(() => {});
+
+      if (booking.vendor && booking.vendor.userId) {
+        await Notification.create({
+          recipientId: booking.vendor.userId,
+          title: 'Customer Payment Received!',
+          message: `Payment of ₹${order.totalAmount} received for Booking #${booking.bookingNumber}. Please prepare the equipment for dispatch.`,
+          type: 'BOOKING',
+          metadata: { bookingId: booking.id, orderId: order.id }
+        }, { transaction: t }).catch(() => {});
+      }
+
+      await t.commit();
+
+      return {
+        booking,
+        order
+      };
+
+    } catch (error) {
+      if (!t.finished) await t.rollback();
+      throw error;
+    }
+  }
 }
 
 module.exports = PaymentService;

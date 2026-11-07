@@ -16,7 +16,12 @@ import {
   Send,
   Loader2,
   Package,
-  ArrowRight
+  ArrowRight,
+  QrCode,
+  Copy,
+  CheckCircle2,
+  Lock,
+  Smartphone
 } from 'lucide-react';
 import api from '../../../services/api';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
@@ -44,6 +49,14 @@ export default function Quotations() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalError, setModalError] = useState('');
 
+  // Pay Modal State
+  const [payTarget, setPayTarget] = useState(null);
+  const [payUtr, setPayUtr] = useState('');
+  const [isPaying, setIsPaying] = useState(false);
+  const [payError, setPayError] = useState('');
+  const [paySuccess, setPaySuccess] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+
   const fetchQuotations = async () => {
     try {
       const res = await api.get('/quotations');
@@ -64,8 +77,16 @@ export default function Quotations() {
               ? prod.images[0]
               : null);
           if (!img || typeof img !== 'string' || img.includes('unsplash.com/photos/')) {
-            img =
-              'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+            const lowerName = (prod?.name || '').toLowerCase();
+            if (lowerName.includes('mic') || lowerName.includes('microphone') || lowerName.includes('wireless')) {
+              img = 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80';
+            } else if (lowerName.includes('sofa') || lowerName.includes('couch') || lowerName.includes('furniture')) {
+              img = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80';
+            } else if (lowerName.includes('speaker') || lowerName.includes('boat')) {
+              img = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+            } else {
+              img = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80';
+            }
           }
 
           let eventFormatted = q.eventDate || 'Scheduled Event';
@@ -115,6 +136,8 @@ export default function Quotations() {
             totalAmount: Number(q.totalAmount || 0),
             customerNotes: q.notes || null,
             vendorNotes: q.vendorNotes || null,
+            vendorUpi: q.vendor?.upiId || (q.vendor?.businessName ? `${q.vendor.businessName.toLowerCase().replace(/[^a-z0-9]/g, '')}@okaxis` : 'vendor@okaxis'),
+            vendorQrCodeUrl: q.vendor?.qrCodeUrl || '',
             rawQuotation: q
           };
         });
@@ -153,21 +176,78 @@ export default function Quotations() {
 
   const handleAccept = async (quotId) => {
     try {
-      await api.patch(`/quotations/${quotId}/accept`);
+      const res = await api.patch(`/quotations/${quotId}/accept`);
+      const bookingData = res.data?.data?.booking;
+      const orderData = res.data?.data?.order;
       setQuotations((prev) =>
-        prev.map((q) => (q.id === quotId ? { ...q, status: 'Accepted', rawStatus: 'Accepted' } : q))
+        prev.map((q) => (q.id === quotId ? {
+          ...q,
+          status: 'Accepted',
+          rawStatus: 'Accepted',
+          bookingId: bookingData?.id,
+          orderNumber: orderData?.orderNumber
+        } : q))
       );
       setActionNotice({
         type: 'success',
-        msg: 'Quotation accepted! Official rental booking has been created in your account. You can now view it under My Bookings.'
+        msg: `Quotation accepted! Official rental order #${orderData?.orderNumber || 'ORD'} generated with your negotiated quote rates. You can now complete the payment directly below.`
       });
-      setTimeout(() => setActionNotice(null), 5000);
+      setTimeout(() => setActionNotice(null), 6000);
+      await fetchQuotations();
     } catch (e) {
       setActionNotice({
         type: 'error',
         msg: e.response?.data?.message || 'Failed to accept quotation. Please try again.'
       });
       setTimeout(() => setActionNotice(null), 4000);
+    }
+  };
+
+  const handlePaySubmit = async (e) => {
+    e.preventDefault();
+    if (!payTarget) return;
+
+    setIsPaying(true);
+    setPayError('');
+    setPaySuccess('');
+
+    try {
+      let bId = payTarget.bookingId;
+      if (!bId) {
+        const myB = await api.get('/bookings/my');
+        const list = myB.data?.data?.results || myB.data?.data?.rows || (Array.isArray(myB.data?.data) ? myB.data.data : []);
+        const found = list.find((b) => {
+          return b.rentalNotes && (b.rentalNotes.includes(payTarget.quotationNumber) || b.rentalNotes.includes(payTarget.id));
+        });
+        if (found) bId = found.id;
+        else if (list.length > 0) bId = list[0].id;
+      }
+
+      if (!bId) {
+        throw new Error('Associated booking record not found. Please visit My Bookings to complete payment.');
+      }
+
+      const res = await api.post('/payments/pay-booking', {
+        bookingId: bId,
+        paymentMethod: 'UPI',
+        utrNumber: payUtr.trim() || `UTR${Date.now()}`,
+        amountPaid: payTarget.totalAmount
+      });
+
+      if (res.data?.success) {
+        setPaySuccess('Payment confirmed successfully! Your rental order is officially confirmed.');
+        setTimeout(() => {
+          setPayTarget(null);
+          setPaySuccess('');
+          setPayUtr('');
+          fetchQuotations();
+        }, 2000);
+      }
+    } catch (err) {
+      console.error('Payment error:', err);
+      setPayError(err.response?.data?.message || err.message || 'Payment submission failed.');
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -302,7 +382,7 @@ export default function Quotations() {
             </button>
             <Link
               to="/products"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F1FAEE] text-[#1D3557] border border-[#A8DADC] text-xs font-bold hover:bg-[#1D3557] hover:text-white transition-all"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#F1FAEE] text-[#1D3557] border border-[#E2E8F0] text-xs font-bold hover:bg-[#1D3557] hover:text-white transition-all"
             >
               <span>Explore Marketplace</span>
             </Link>
@@ -421,10 +501,23 @@ export default function Quotations() {
                 )}
 
                 {quot.status === 'Accepted' && (
-                  <Link to="/customer/bookings" className="btn-proceed-pay">
-                    <CreditCard size={15} />
-                    <span>View Booking & Pay</span>
-                  </Link>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setPayTarget(quot);
+                        setPayUtr('');
+                        setPayError('');
+                        setPaySuccess('');
+                      }}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      <CreditCard size={14} />
+                      <span>Pay Now (₹{quot.totalAmount.toLocaleString('en-IN')})</span>
+                    </button>
+                    <Link to="/customer/bookings" className="btn-view-doc">
+                      <span>My Bookings</span>
+                    </Link>
+                  </div>
                 )}
 
                 {quot.status === 'Declined' && (
@@ -589,6 +682,202 @@ export default function Quotations() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Rental Payment Modal */}
+      {payTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-red-50 text-[#E63946] flex items-center justify-center font-bold">
+                  <CreditCard size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-[#1D3557] text-base font-['Sora']">Complete Quoted Rental Payment</h4>
+                  <p className="text-[11px] text-[#475569]">Ref: {payTarget.quotationNumber} • {payTarget.vendor}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setPayTarget(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {paySuccess ? (
+              <div className="p-8 text-center space-y-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-800">
+                <CheckCircle2 size={44} className="text-emerald-600 mx-auto" />
+                <h5 className="font-bold text-lg">Payment Confirmed!</h5>
+                <p className="text-xs max-w-xs mx-auto">{paySuccess}</p>
+              </div>
+            ) : (
+              <form onSubmit={handlePaySubmit} className="space-y-4">
+                {payError && (
+                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
+                    <AlertCircle size={15} className="shrink-0" />
+                    <span>{payError}</span>
+                  </div>
+                )}
+
+                {/* Equipment Summary */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center gap-3">
+                  <img
+                    src={payTarget.image}
+                    alt={payTarget.product}
+                    className="w-14 h-14 rounded-xl object-cover border border-slate-200 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h5 className="font-bold text-navy text-xs truncate">{payTarget.product}</h5>
+                    <p className="text-[11px] text-[#475569] mt-0.5">
+                      {payTarget.dates} ({payTarget.duration}) • Qty: {payTarget.quantity}
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full mt-1">
+                      <Sparkles size={10} /> Special Quoted Rate Applied
+                    </span>
+                  </div>
+                </div>
+
+                {/* Amount Breakdown */}
+                <div className="p-3.5 bg-gradient-to-br from-slate-50 to-[#F1FAEE] border border-slate-200 rounded-2xl space-y-1.5 text-xs">
+                  <div className="flex justify-between text-slate-600">
+                    <span>Quoted Subtotal:</span>
+                    <span className="font-semibold text-slate-900">₹{payTarget.subtotal.toLocaleString('en-IN')}</span>
+                  </div>
+                  {payTarget.taxAmount > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>GST (18%):</span>
+                      <span className="font-semibold text-slate-900">₹{payTarget.taxAmount.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  {payTarget.deposit > 0 && (
+                    <div className="flex justify-between text-slate-600">
+                      <span>Refundable Escrow Deposit:</span>
+                      <span className="font-semibold text-emerald-600">₹{payTarget.deposit.toLocaleString('en-IN')}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-baseline pt-2 border-t border-slate-200 text-sm">
+                    <span className="font-bold text-navy">Total Quoted Amount:</span>
+                    <span className="text-xl font-extrabold text-[#E63946]">₹{payTarget.totalAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                {/* QR Code & Official UPI */}
+                <div className="p-4 bg-white border border-[#E2E8F0]/80 rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-[#1D3557] flex items-center gap-1.5">
+                      <QrCode size={15} className="text-[#E63946]" />
+                      <span>Scan & Pay to Vendor UPI</span>
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                      Verified Store
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <div className="p-2 bg-slate-50 rounded-xl border border-dashed border-[#E2E8F0] shrink-0 text-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(`upi://pay?pa=${payTarget.vendorUpi}&pn=${encodeURIComponent(payTarget.vendor)}&am=${payTarget.totalAmount}&cu=INR&tn=${encodeURIComponent(`Rentora Quote ${payTarget.quotationNumber}`)}`)}&margin=4`}
+                        alt="Vendor UPI QR Code"
+                        className="w-28 h-28 mx-auto rounded object-contain"
+                      />
+                      <span className="text-[9px] text-slate-400 font-semibold block mt-1">Scan with GPay / PhonePe / Paytm</span>
+                    </div>
+
+                    <div className="space-y-2 flex-1 w-full">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Vendor UPI ID</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex-1 font-mono text-xs p-2 rounded-xl bg-slate-50 border border-slate-200 text-navy font-bold select-all truncate">
+                            {payTarget.vendorUpi}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(payTarget.vendorUpi);
+                              setCopiedUpi(true);
+                              setTimeout(() => setCopiedUpi(false), 2000);
+                            }}
+                            className="px-2.5 py-2 rounded-xl bg-[#1D3557] hover:bg-[#457B9D] text-white text-xs font-bold transition-all flex items-center gap-1"
+                          >
+                            {copiedUpi ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                            <span>{copiedUpi ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">1-Click UPI Launch</span>
+                        <div className="flex flex-wrap gap-1">
+                          <a
+                            href={`upi://pay?pa=${payTarget.vendorUpi}&pn=${encodeURIComponent(payTarget.vendor)}&am=${payTarget.totalAmount}&cu=INR`}
+                            className="px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-800 text-[10px] font-bold hover:bg-emerald-100"
+                          >
+                            Google Pay
+                          </a>
+                          <a
+                            href={`upi://pay?pa=${payTarget.vendorUpi}&pn=${encodeURIComponent(payTarget.vendor)}&am=${payTarget.totalAmount}&cu=INR`}
+                            className="px-2 py-1 rounded-lg bg-indigo-50 border border-indigo-300 text-indigo-800 text-[10px] font-bold hover:bg-indigo-100"
+                          >
+                            PhonePe
+                          </a>
+                          <a
+                            href={`upi://pay?pa=${payTarget.vendorUpi}&pn=${encodeURIComponent(payTarget.vendor)}&am=${payTarget.totalAmount}&cu=INR`}
+                            className="px-2 py-1 rounded-lg bg-sky-50 border border-sky-300 text-sky-800 text-[10px] font-bold hover:bg-sky-100"
+                          >
+                            Paytm / BHIM
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* UTR / Bank Reference Number */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700 block">
+                    Bank Reference / UTR Number (Optional / Auto-Confirmed)
+                  </label>
+                  <input
+                    type="text"
+                    value={payUtr}
+                    onChange={(e) => setPayUtr(e.target.value)}
+                    placeholder="e.g. 425678912345 (12-digit UTR from payment receipt)"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 focus:outline-none focus:border-[#E63946]"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setPayTarget(null)}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-xs font-bold hover:bg-slate-50 transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPaying}
+                    className="px-6 py-2.5 rounded-xl bg-[#E63946] hover:bg-[#D62839] text-white text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
+                  >
+                    {isPaying ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        <span>Processing Payment...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={14} />
+                        <span>Confirm & Complete Payment (₹{payTarget.totalAmount.toLocaleString('en-IN')})</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

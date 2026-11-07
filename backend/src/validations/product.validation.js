@@ -112,6 +112,24 @@ function validateProductUpdate(data) {
     }
   }
 
+  if (data.stock !== undefined && data.stock !== null && data.stock !== '') {
+    if (isNaN(Number(data.stock)) || Number(data.stock) < 0) {
+      errors.stock = 'Stock must be a non-negative number';
+    }
+  }
+
+  if (data.totalStock !== undefined && data.totalStock !== null && data.totalStock !== '') {
+    if (isNaN(Number(data.totalStock)) || Number(data.totalStock) < 0) {
+      errors.totalStock = 'Total stock must be a non-negative number';
+    }
+  }
+
+  if (data.minStockAlert !== undefined && data.minStockAlert !== null && data.minStockAlert !== '') {
+    if (isNaN(Number(data.minStockAlert)) || Number(data.minStockAlert) < 0) {
+      errors.minStockAlert = 'Minimum stock alert must be a non-negative number';
+    }
+  }
+
   if (data.status && !['Draft', 'Active', 'Inactive', 'Archived'].includes(data.status)) {
     errors.status = `Invalid status. Allowed values: Draft, Active, Inactive, Archived`;
   }

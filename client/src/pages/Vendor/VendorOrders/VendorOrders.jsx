@@ -17,30 +17,38 @@ import {
   ShieldCheck,
   Receipt,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Tag
 } from 'lucide-react';
 import { useVendor } from '../../../context/VendorContext';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import './VendorOrders.css';
 
-const TABS = ['All', 'Confirmed', 'Processing', 'Active', 'Completed'];
+const TABS = ['All', 'Pending', 'Confirmed', 'Processing', 'Active', 'Completed'];
 
 export default function VendorOrders() {
-  const { orders, updateOrderStatus, showToast } = useVendor();
+  const { orders, updateOrderStatus, acceptVendorOrder, refreshVendorData, showToast } = useVendor();
 
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [docModal, setDocModal] = useState(null);
 
-  const filteredOrders = orders.filter((o) => {
+  React.useEffect(() => {
+    if (refreshVendorData) {
+      refreshVendorData();
+    }
+  }, []);
+
+  const filteredOrders = (orders || []).filter((o) => {
+    if (!o) return false;
     if (activeTab !== 'All' && o.orderStatus !== activeTab) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       return (
-        o.orderId.toLowerCase().includes(q) ||
-        o.customer.name.toLowerCase().includes(q) ||
-        o.product.name.toLowerCase().includes(q)
+        (o.orderId && o.orderId.toLowerCase().includes(q)) ||
+        (o.customer?.name && o.customer.name.toLowerCase().includes(q)) ||
+        (o.product?.name && o.product.name.toLowerCase().includes(q))
       );
     }
     return true;
@@ -127,58 +135,87 @@ export default function VendorOrders() {
                 </tr>
               ) : (
                 filteredOrders.map((o) => (
-                  <tr key={o.id} className="v-table-row">
+                  <tr key={o.id} className={`v-table-row ${o.orderStatus === 'Pending' ? 'bg-amber-50/40' : ''}`}>
                     <td>
-                      <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded">
+                      <span className="font-mono font-bold text-navy text-xs bg-slate-100 px-2 py-1 rounded block w-fit">
                         {o.orderId}
                       </span>
+                      {o.isQuotationOrder && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 mt-1">
+                          <Tag size={10} />
+                          <span>Quotation Order</span>
+                        </span>
+                      )}
                     </td>
                     <td>
                       <div className="v-cust-cell">
-                        <img src={o.customer.avatar} alt={o.customer.name} className="v-cust-thumb" />
+                        <img
+                          src={o.customer?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
+                          alt={o.customer?.name || 'Customer'}
+                          className="v-cust-thumb"
+                        />
                         <div>
-                          <span className="font-bold text-navy text-xs block">{o.customer.name}</span>
-                          <span className="text-[11px] text-slate-400">{o.customer.phone}</span>
+                          <span className="font-bold text-navy text-xs block">{o.customer?.name || 'Customer'}</span>
+                          <span className="text-[11px] text-slate-400">{o.customer?.phone || 'N/A'}</span>
                         </div>
                       </div>
                     </td>
                     <td>
                       <div className="v-prod-cell">
-                        <img src={o.product.image} alt={o.product.name} className="v-prod-thumb" />
+                        <img
+                          src={o.product?.image || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80'}
+                          alt={o.product?.name || 'Equipment'}
+                          className="v-prod-thumb"
+                        />
                         <div>
-                          <h4 className="text-xs font-semibold text-navy max-w-xs">{o.product.name}</h4>
-                          <span className="text-[10px] text-slate-400 font-mono">SKU: {o.product.sku}</span>
+                          <h4 className="text-xs font-semibold text-navy max-w-xs">{o.product?.name || 'Rental Gear'}</h4>
+                          <span className="text-[10px] text-slate-400 font-mono">SKU: {o.product?.sku || 'SKU-001'}</span>
                         </div>
                       </div>
                     </td>
                     <td>
                       <span className="text-xs font-semibold text-navy">
-                        {o.startDate} &rarr; {o.endDate}
+                        {o.startDate || 'TBD'} &rarr; {o.endDate || 'TBD'}
                       </span>
-                      <div className="text-[10px] text-slate-400">{o.durationDays} Days ({o.handoverType})</div>
+                      <div className="text-[10px] text-slate-400">{o.durationDays || 1} Days ({o.handoverType || 'Standard'})</div>
                     </td>
                     <td>
                       <div className="font-bold text-navy text-xs">
-                        ₹{o.totalAmount.toLocaleString('en-IN')}
+                        ₹{(o.totalAmount || 0).toLocaleString('en-IN')}
                       </div>
                       <div className="text-[10px] text-emerald-600 font-semibold">
-                        (₹{o.securityDeposit} Escrow)
+                        (₹{(o.securityDeposit || 0).toLocaleString('en-IN')} Escrow)
                       </div>
                     </td>
                     <td>
-                      <span
-                        className={`v-status-badge ${
-                          o.orderStatus === 'Active'
-                            ? 'status-active'
-                            : o.orderStatus === 'Confirmed'
-                            ? 'status-confirmed'
-                            : o.orderStatus === 'Processing'
-                            ? 'status-processing'
-                            : 'status-completed'
-                        }`}
-                      >
-                        {o.orderStatus}
-                      </span>
+                      <div className="space-y-1">
+                        <span
+                          className={`v-status-badge ${
+                            o.orderStatus === 'Active'
+                              ? 'status-active'
+                              : o.orderStatus === 'Confirmed'
+                              ? 'status-confirmed'
+                              : o.orderStatus === 'Pending'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : o.orderStatus === 'Processing'
+                              ? 'status-processing'
+                              : 'status-completed'
+                          }`}
+                        >
+                          {o.orderStatus === 'Pending' ? 'Pending Acceptance' : o.orderStatus}
+                        </span>
+                        <div>
+                          {o.paymentStatus === 'Success' || o.paymentStatus === 'Paid' ? (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <CheckCircle2 size={10} /> Paid
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                              <Clock size={10} /> Payment Pending
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td>
                       <select
@@ -186,6 +223,7 @@ export default function VendorOrders() {
                         onChange={(e) => handleStatusChange(o.orderId, e.target.value)}
                         className="v-status-select"
                       >
+                        <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Processing">Processing</option>
                         <option value="Active">Active (Handed Over)</option>
@@ -195,7 +233,19 @@ export default function VendorOrders() {
                       </select>
                     </td>
                     <td>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {o.orderStatus === 'Pending' && (
+                          <button
+                            onClick={async () => {
+                              await acceptVendorOrder(o.id);
+                            }}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                            title="Accept & Confirm Order"
+                          >
+                            <CheckCircle2 size={13} />
+                            <span>Accept</span>
+                          </button>
+                        )}
                         <button
                           onClick={() => setSelectedOrder(o)}
                           className="btn-v-action-view"
@@ -248,31 +298,31 @@ export default function VendorOrders() {
               <div className="grid grid-cols-2 gap-3 text-xs bg-blue-50/50 p-3 rounded-xl border border-blue-100">
                 <div>
                   <span className="text-slate-400 block">Customer Name:</span>
-                  <span className="font-bold text-navy">{selectedOrder.customer.name}</span>
+                  <span className="font-bold text-navy">{selectedOrder.customer?.name || 'Customer'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Contact Phone:</span>
-                  <span className="font-bold text-navy">{selectedOrder.customer.phone}</span>
+                  <span className="font-bold text-navy">{selectedOrder.customer?.phone || 'N/A'}</span>
                 </div>
                 <div className="col-span-2">
                   <span className="text-slate-400 block">Delivery / Handover Address:</span>
-                  <span className="font-medium text-navy">{selectedOrder.customer.address}</span>
+                  <span className="font-medium text-navy">{selectedOrder.customer?.address || selectedOrder.customer?.city || 'Local Pickup / Standard Address'}</span>
                 </div>
               </div>
 
               {/* Financials & Deposit */}
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Base Rental Fee ({selectedOrder.durationDays} Days)</span>
-                  <span className="font-semibold text-navy">₹{selectedOrder.rentalAmount.toLocaleString('en-IN')}</span>
+                  <span className="text-slate-500">Base Rental Fee ({selectedOrder.durationDays || 1} Days)</span>
+                  <span className="font-semibold text-navy">₹{(selectedOrder.rentalAmount || 0).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Security Deposit (Escrow Protected)</span>
-                  <span className="font-semibold text-emerald-600">₹{selectedOrder.securityDeposit.toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-emerald-600">₹{(selectedOrder.securityDeposit || 0).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-slate-200 font-bold text-sm text-navy">
                   <span>Total Amount Paid</span>
-                  <span>₹{selectedOrder.totalAmount.toLocaleString('en-IN')}</span>
+                  <span>₹{(selectedOrder.totalAmount || 0).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -285,9 +335,23 @@ export default function VendorOrders() {
                 <Receipt size={15} />
                 <span>View Tax Invoice</span>
               </button>
-              <button onClick={() => setSelectedOrder(null)} className="btn-v-primary">
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedOrder.orderStatus === 'Pending' && (
+                  <button
+                    onClick={async () => {
+                      await acceptVendorOrder(selectedOrder.id);
+                      setSelectedOrder((prev) => ({ ...prev, orderStatus: 'Confirmed' }));
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                  >
+                    <CheckCircle2 size={15} />
+                    <span>Accept & Confirm Order</span>
+                  </button>
+                )}
+                <button onClick={() => setSelectedOrder(null)} className="btn-v-primary">
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

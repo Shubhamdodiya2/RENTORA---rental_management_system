@@ -68,10 +68,23 @@ async function streamPaymentProof(req, res, next) {
   }
 }
 
+/**
+ * Customer Direct / UPI Payment for Booking / Quotation Order
+ */
+async function payBooking(req, res, next) {
+  try {
+    const result = await PaymentService.payBooking(req.user.id, req.body);
+    return ApiResponse.success(res, 'Payment processed successfully! Your rental booking is confirmed.', result, 200);
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   getUpiDetails,
   submitManualPayment,
   getMySubmissions,
   getBookingPaymentDetails,
-  streamPaymentProof
+  streamPaymentProof,
+  payBooking
 };

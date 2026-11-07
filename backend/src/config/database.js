@@ -22,6 +22,12 @@ if (env.NODE_ENV === 'test') {
     port: env.DB.PORT,
     dialect: 'mysql',
     logging: env.NODE_ENV === 'development' ? (msg) => console.log(`[SQL] ${msg}`) : false,
+    dialectOptions: env.DB.SSL ? {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    } : {},
     pool: {
       max: env.DB.POOL.MAX,
       min: env.DB.POOL.MIN,

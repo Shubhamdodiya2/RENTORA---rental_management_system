@@ -373,6 +373,56 @@ class VendorProductController {
         }
       }
 
+      // Update Inventory if stock / totalStock / minStockAlert is provided
+      const stockInput = req.body.stock !== undefined ? req.body.stock : req.body.totalStock;
+      const minAlertInput = req.body.minStockAlert;
+      if (stockInput !== undefined || minAlertInput !== undefined) {
+        let inventory = await Inventory.findOne({
+          where: { productId: product.id },
+          lock: t.LOCK.UPDATE,
+          transaction: t
+        });
+
+        if (inventory) {
+          if (stockInput !== undefined) {
+            const newTotal = parseInt(stockInput, 10);
+            if (!isNaN(newTotal) && newTotal >= 0) {
+              const prevTotal = inventory.totalStock;
+              const delta = newTotal - prevTotal;
+              inventory.totalStock = newTotal;
+              inventory.availableStock = Math.max(0, newTotal - (inventory.reservedStock || 0) - (inventory.damagedStock || 0));
+              await inventory.save({ transaction: t });
+
+              if (delta !== 0) {
+                await InventoryTransaction.create({
+                  productId: product.id,
+                  deltaQuantity: delta,
+                  previousStock: prevTotal,
+                  newStock: newTotal,
+                  transactionType: delta > 0 ? 'STOCK_ADDED' : 'STOCK_REDUCED',
+                  reason: 'Vendor updated stock quantity via product edit',
+                  performedBy: req.user.id
+                }, { transaction: t });
+              }
+            }
+          }
+          if (minAlertInput !== undefined) {
+            inventory.minStockAlert = parseInt(minAlertInput, 10) || 1;
+            await inventory.save({ transaction: t });
+          }
+        } else if (stockInput !== undefined) {
+          const totalStockNum = Math.max(0, parseInt(stockInput, 10) || 1);
+          await Inventory.create({
+            productId: product.id,
+            totalStock: totalStockNum,
+            availableStock: totalStockNum,
+            reservedStock: 0,
+            damagedStock: 0,
+            minStockAlert: parseInt(minAlertInput, 10) || 1
+          }, { transaction: t });
+        }
+      }
+
       await t.commit();
 
       const updated = await Product.findByPk(product.id, {
@@ -548,11 +598,11 @@ class VendorProductController {
    * Adjust total stock or minimum alert threshold with future commitment safety check
    */
   static async updateInventory(req, res) {
-    const { totalStock, minStockAlert } = req.body;
+    let { totalStock, minStockAlert, deltaStock, reason } = req.body;
     const product = req.product;
 
-    if (totalStock === undefined && minStockAlert === undefined) {
-      return ApiResponse.error(res, 'totalStock or minStockAlert is required', null, 400);
+    if (totalStock === undefined && minStockAlert === undefined && deltaStock === undefined) {
+      return ApiResponse.error(res, 'totalStock, deltaStock or minStockAlert is required', null, 400);
     }
 
     const t = await sequelize.transaction();
@@ -567,6 +617,10 @@ class VendorProductController {
       if (!inventory) {
         await t.rollback();
         return ApiResponse.error(res, 'Inventory record not found', null, 404);
+      }
+
+      if (deltaStock !== undefined && totalStock === undefined) {
+        totalStock = Math.max(0, inventory.totalStock + parseInt(deltaStock, 10));
       }
 
       if (totalStock !== undefined) {

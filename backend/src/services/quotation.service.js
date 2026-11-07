@@ -218,13 +218,23 @@ class QuotationService {
       const bookingPayload = {
         items: quotation.items.map(i => ({
           productId: i.productId,
-          quantity: i.quantity
+          quantity: i.quantity,
+          customRate: i.customRate !== null && i.customRate !== undefined ? Number(i.customRate) : Number(i.unitRate)
         })),
         startDate,
         endDate,
         deliveryType: 'doorstep',
         deliveryAddress: 'Customer Address on File',
-        rentalNotes: `Created from accepted Quotation #${quotation.quotationNumber}`
+        rentalNotes: `Created from accepted Quotation #${quotation.quotationNumber}`,
+        quotationId: quotation.id,
+        quotationNumber: quotation.quotationNumber,
+        customFinancials: {
+          subtotal: Number(quotation.subtotal),
+          taxAmount: Number(quotation.taxAmount),
+          depositAmount: Number(quotation.depositAmount || 0),
+          discountAmount: Number(quotation.discountAmount || 0),
+          totalAmount: Number(quotation.totalAmount)
+        }
       };
 
       const booking = await BookingService.createBooking(customerId, bookingPayload, { transaction: t });
@@ -232,13 +242,18 @@ class QuotationService {
       quotation.status = 'Accepted';
       await quotation.save({ transaction: t });
 
+      // Fetch created Order
+      const { Order } = require('../models');
+      const order = await Order.findOne({ where: { bookingId: booking.id }, transaction: t });
+
       if (!options.transaction) {
         await t.commit();
       }
 
       return {
         quotation,
-        booking
+        booking,
+        order
       };
 
     } catch (error) {

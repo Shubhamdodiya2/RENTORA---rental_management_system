@@ -108,10 +108,34 @@ export function VendorProvider({ children }) {
       const formattedOrders = rawBookings.map((b) => {
         const firstItem = b.items && b.items[0];
         const prod = firstItem?.product;
-        const prodImg = (prod?.images && prod.images[0]?.imageUrl) || 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+        let prodImg = prod?.primaryImage || (prod?.images && prod.images[0]?.imageUrl);
+        if (!prodImg) {
+          const lowerName = (prod?.name || '').toLowerCase();
+          if (lowerName.includes('mic') || lowerName.includes('microphone') || lowerName.includes('wireless')) {
+            prodImg = 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80';
+          } else if (lowerName.includes('sofa') || lowerName.includes('couch') || lowerName.includes('furniture')) {
+            prodImg = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80';
+          } else if (lowerName.includes('speaker') || lowerName.includes('boat')) {
+            prodImg = 'https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80';
+          } else {
+            prodImg = 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80';
+          }
+        }
         
+        let isQuotation = false;
+        try {
+          const parsed = JSON.parse(b.rentalNotes || '{}');
+          if (parsed.quotationId || parsed.isQuotationOrder || (typeof b.rentalNotes === 'string' && b.rentalNotes.includes('Quotation #'))) {
+            isQuotation = true;
+          }
+        } catch (e) {
+          if (typeof b.rentalNotes === 'string' && b.rentalNotes.includes('Quotation #')) isQuotation = true;
+        }
+
         let displayStatus = 'Confirmed';
-        if (b.status === 'PRODUCT_RESERVED' || b.status === 'BOOKING_CONFIRMED' || b.status === 'Confirmed') {
+        if (isQuotation && b.order && b.order.orderStatus === 'Pending') {
+          displayStatus = 'Pending';
+        } else if (b.status === 'PRODUCT_RESERVED' || b.status === 'BOOKING_CONFIRMED' || b.status === 'Confirmed') {
           displayStatus = 'Confirmed';
         } else if (b.status === 'PICKUP_SCHEDULED' || b.status === 'PRODUCT_HANDED_OVER' || b.status === 'Processing') {
           displayStatus = 'Processing';
@@ -123,9 +147,13 @@ export function VendorProvider({ children }) {
           displayStatus = 'Cancelled';
         }
 
+        const realPaymentStatus = !isQuotation ? 'Paid' : (b.order?.paymentStatus === 'Success' || b.order?.paymentStatus === 'Paid' ? 'Paid' : 'Pending');
+
         return {
           id: b.id,
-          orderId: b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
+          orderId: b.order?.orderNumber || b.bookingNumber || b.id.slice(0, 8).toUpperCase(),
+          bookingNumber: b.bookingNumber,
+          isQuotationOrder: isQuotation,
           customer: {
             id: b.customer?.id,
             name: b.customer?.fullName || 'Customer',
@@ -143,7 +171,7 @@ export function VendorProvider({ children }) {
           },
           startDate: b.startDate,
           endDate: b.endDate,
-          durationDays: b.totalRentalDays || 2,
+          durationDays: b.totalRentalDays || b.durationCount || 2,
           deliveryType: b.deliveryType || 'doorstep',
           handoverType: b.deliveryType === 'store_pickup' ? 'Store Pickup' : 'Doorstep Delivery',
           quantity: firstItem?.quantity || 1,
@@ -152,7 +180,7 @@ export function VendorProvider({ children }) {
           securityDeposit: Number(b.depositAmount || b.securityDeposit || 0),
           orderStatus: displayStatus,
           status: b.status,
-          paymentStatus: b.paymentStatus || 'Paid',
+          paymentStatus: realPaymentStatus,
           paymentPlan: b.paymentPlan || 'full',
           orderDate: new Date(b.createdAt || Date.now()).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
         };
@@ -251,15 +279,17 @@ export function VendorProvider({ children }) {
 
   const updateProduct = async (id, updatedFields) => {
     try {
-      await api.put(`/vendor/products/${id}`, updatedFields).catch(() => null);
+      const res = await api.put(`/vendor/products/${id}`, updatedFields);
       await fetchVendorData();
+      showToast('Product details updated successfully!', 'success');
+      return true;
     } catch (e) {
-      // Continue locally
+      console.error('[VendorContext] updateProduct error:', e);
+      const errMsg = e.response?.data?.message || 'Failed to update product details';
+      showToast(errMsg, 'error');
+      await fetchVendorData();
+      return false;
     }
-    setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updatedFields } : p))
-    );
-    showToast('Product details updated successfully!', 'success');
   };
 
   const deleteProduct = async (id) => {
@@ -283,25 +313,14 @@ export function VendorProvider({ children }) {
 
   const adjustStock = async (id, delta, reason) => {
     try {
-      await api.patch(`/vendor/products/${id}/inventory`, { deltaStock: delta, reason }).catch(() => null);
+      await api.patch(`/vendor/products/${id}/inventory`, { deltaStock: delta, reason });
+      await fetchVendorData();
+      showToast(`Stock updated (${delta > 0 ? `+${delta}` : delta} units) - ${reason}`, 'success');
     } catch (e) {
-      // Continue locally
+      console.error('[VendorContext] adjustStock error:', e);
+      showToast(e.response?.data?.message || 'Failed to adjust stock', 'error');
+      await fetchVendorData();
     }
-    setProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const newStock = Math.max(0, (p.stock || 1) + delta);
-          const newAvail = Math.max(0, (p.availableStock || 1) + delta);
-          let newStatus = p.status;
-          if (newStock === 0) newStatus = 'Out of Stock';
-          else if (newStock <= (p.minStockAlert || 1)) newStatus = 'Low Stock';
-          else newStatus = 'Active';
-          return { ...p, stock: newStock, availableStock: newAvail, status: newStatus };
-        }
-        return p;
-      })
-    );
-    showToast(`Stock updated (${delta > 0 ? `+${delta}` : delta} units) - ${reason}`, 'success');
   };
 
   const updateOrderStatus = (orderId, newStatus) => {
@@ -309,6 +328,24 @@ export function VendorProvider({ children }) {
       prev.map((o) => (o.orderId === orderId || o.id === orderId ? { ...o, orderStatus: newStatus } : o))
     );
     showToast(`Order ${orderId} updated to ${newStatus}.`, 'success');
+  };
+
+  const acceptVendorOrder = async (bookingId) => {
+    try {
+      const res = await api.patch(`/vendor/bookings/${bookingId}/accept-order`);
+      if (res.data?.success) {
+        showToast('Rental order accepted & confirmed! Customer can now proceed to payment.', 'success');
+        setOrders((prev) =>
+          prev.map((o) => (o.id === bookingId ? { ...o, orderStatus: 'Confirmed' } : o))
+        );
+        await fetchVendorData();
+        return true;
+      }
+    } catch (err) {
+      console.error('[VendorContext] Accept order error:', err);
+      showToast(err.response?.data?.message || 'Failed to accept rental order', 'error');
+      return false;
+    }
   };
 
   const addQuotation = (newQuo) => {
@@ -400,6 +437,7 @@ export function VendorProvider({ children }) {
         updateProductStatus,
         adjustStock,
         updateOrderStatus,
+        acceptVendorOrder,
         addQuotation,
         updateQuotationStatus,
         setNotifications,

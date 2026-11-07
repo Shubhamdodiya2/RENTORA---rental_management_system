@@ -8,11 +8,16 @@
   border: 1px solid rgba(168, 218, 220, 0.4);
 }
 
+.category-card:active {
+  transform: scale(0.98);
+}
+
 .category-card-active {
   background-color: #1D3557;
   color: #ffffff;
   border-color: #E63946;
-  box-shadow: 0 15px 30px -5px rgba(29, 53, 87, 0.3);
+  box-shadow: 0 15px 30px -5px rgba(29, 53, 87, 0.35);
+  transform: translateY(-2px);
 }
 
 .category-card-inactive {
@@ -22,6 +27,8 @@
 
 .category-card-inactive:hover {
   background-color: #F1FAEE;
-  transform: translateY(-4px);
-  box-shadow: 0 15px 30px -10px rgba(29, 53, 87, 0.1);
+  border-color: rgba(230, 57, 70, 0.4);
+  transform: translateY(-5px);
+  box-shadow: 0 16px 32px -10px rgba(29, 53, 87, 0.12);
 }
+

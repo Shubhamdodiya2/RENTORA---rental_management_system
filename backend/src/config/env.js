@@ -9,6 +9,7 @@ module.exports = {
     NAME: process.env.DB_NAME || 'rentora_db',
     USER: process.env.DB_USER || 'root',
     PASSWORD: process.env.DB_PASSWORD || '',
+    SSL: process.env.DB_SSL === 'true',
     POOL: {
       MAX: parseInt(process.env.DB_POOL_MAX, 10) || 20,
       MIN: parseInt(process.env.DB_POOL_MIN, 10) || 2,
