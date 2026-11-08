@@ -22,6 +22,7 @@ const {
 } = require('../models');
 const InvoiceService = require('./invoice.service');
 const { ROLES } = require('../config/constants');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
 class PaymentService {
   /**
@@ -63,6 +64,15 @@ class PaymentService {
 
     let currentConfig = await this.getPlatformUpiConfig();
 
+    let qrCodeUrl = currentConfig.qrCodeUrl;
+    if (file) {
+      qrCodeUrl = `/uploads/qr/${file.filename}`;
+      const cloudUpload = await uploadToCloudinary(file.path, 'rentora/qr');
+      if (cloudUpload?.secure_url) {
+        qrCodeUrl = cloudUpload.secure_url;
+      }
+    }
+
     const newConfig = {
       upiId: String(upiId).trim(),
       payeeName: String(payeeName).trim(),
@@ -70,7 +80,7 @@ class PaymentService {
       accountNumberMasked: accountNumberMasked ? String(accountNumberMasked).trim() : currentConfig.accountNumberMasked,
       ifscCode: ifscCode ? String(ifscCode).trim() : currentConfig.ifscCode,
       instructions: instructions ? String(instructions).trim() : currentConfig.instructions,
-      qrCodeUrl: file ? `/uploads/qr/${file.filename}` : currentConfig.qrCodeUrl,
+      qrCodeUrl,
       isActive: isActive !== undefined ? (isActive === true || isActive === 'true') : true
     };
 
@@ -183,6 +193,12 @@ class PaymentService {
     }
 
     // 5. Create PaymentSubmission Record
+    let proofFileUrl = `/uploads/payment_proofs/${file.filename}`;
+    const cloudUpload = await uploadToCloudinary(file.path, 'rentora/payment_proofs');
+    if (cloudUpload?.secure_url) {
+      proofFileUrl = cloudUpload.secure_url;
+    }
+
     const submission = await PaymentSubmission.create({
       orderId: order.id,
       bookingId: order.bookingId,
@@ -193,7 +209,7 @@ class PaymentService {
       utrNumber: cleanUtr,
       payerUpiId: payerUpiId ? String(payerUpiId).trim() : null,
       payerName: payerName ? String(payerName).trim() : null,
-      proofFileUrl: `/uploads/payment_proofs/${file.filename}`,
+      proofFileUrl,
       proofFileOriginalName: file.originalname,
       proofFileMimeType: file.mimetype,
       proofFileSize: file.size,
@@ -680,6 +696,15 @@ class PaymentService {
       const err = new Error('Forbidden: You do not have permission to view this payment proof');
       err.statusCode = 403;
       throw err;
+    }
+
+    if (submission.proofFileUrl && submission.proofFileUrl.startsWith('http')) {
+      return {
+        isRemote: true,
+        url: submission.proofFileUrl,
+        mimeType: submission.proofFileMimeType,
+        originalName: submission.proofFileOriginalName
+      };
     }
 
     const relativePath = submission.proofFileUrl.replace(/^\//, '');

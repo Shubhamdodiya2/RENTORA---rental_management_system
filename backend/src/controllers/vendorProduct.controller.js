@@ -22,6 +22,7 @@ const {
   validateProductCreate, 
   validateProductUpdate 
 } = require('../validations/product.validation');
+const { uploadToCloudinary } = require('../config/cloudinary');
 
 class VendorProductController {
   /**
@@ -250,7 +251,11 @@ class VendorProductController {
         return ApiResponse.error(res, 'No image file uploaded', null, 400);
       }
 
-      const imageUrl = `/uploads/products/${file.filename}`;
+      let imageUrl = `/uploads/products/${file.filename}`;
+      const cloudUpload = await uploadToCloudinary(file.path, 'rentora/products');
+      if (cloudUpload?.secure_url) {
+        imageUrl = cloudUpload.secure_url;
+      }
       return ApiResponse.success(res, 'Image uploaded successfully', { imageUrl, filename: file.filename }, 201);
     } catch (error) {
       console.error('[Upload Single Image Error]:', error);
@@ -475,17 +480,23 @@ class VendorProductController {
       const existingImagesCount = await ProductImage.count({ where: { productId: product.id } });
       const hasPrimary = await ProductImage.findOne({ where: { productId: product.id, isPrimary: true } });
 
-      const imageRows = files.map((file, idx) => {
-        const imageUrl = `/uploads/products/${file.filename}`;
+      const imageRows = [];
+      for (let idx = 0; idx < files.length; idx++) {
+        const file = files[idx];
+        let imageUrl = `/uploads/products/${file.filename}`;
+        const cloudUpload = await uploadToCloudinary(file.path, 'rentora/products');
+        if (cloudUpload?.secure_url) {
+          imageUrl = cloudUpload.secure_url;
+        }
         const isPrimary = !hasPrimary && idx === 0 && existingImagesCount === 0;
-        return {
+        imageRows.push({
           productId: product.id,
           imageUrl,
           altText: `${product.name} photo`,
           isPrimary,
           displayOrder: existingImagesCount + idx
-        };
-      });
+        });
+      }
 
       const savedImages = await ProductImage.bulkCreate(imageRows);
 

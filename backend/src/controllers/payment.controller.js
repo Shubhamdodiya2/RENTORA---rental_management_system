@@ -60,6 +60,9 @@ async function getBookingPaymentDetails(req, res, next) {
 async function streamPaymentProof(req, res, next) {
   try {
     const fileInfo = await PaymentService.getProofFilePath(req.params.submissionId, req.user);
+    if (fileInfo.isRemote) {
+      return res.redirect(fileInfo.url);
+    }
     res.setHeader('Content-Type', fileInfo.mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${fileInfo.originalName}"`);
     return res.sendFile(fileInfo.absolutePath);

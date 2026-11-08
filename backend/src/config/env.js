@@ -1,4 +1,9 @@
-require('dotenv').config();
+const path = require('path');
+const dotenv = require('dotenv');
+
+// Load .env from backend directory or process cwd
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config();
 
 module.exports = {
   PORT: process.env.PORT || 5000,
@@ -25,6 +30,11 @@ module.exports = {
   },
   ENCRYPTION_KEY: process.env.APP_ENCRYPTION_KEY || '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
   CORS_ORIGINS: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  CLOUDINARY: {
+    CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    API_KEY: process.env.CLOUDINARY_API_KEY,
+    API_SECRET: process.env.CLOUDINARY_API_SECRET
+  },
   SEED_CONFIG: {
     ADMIN_EMAIL: process.env.SEED_ADMIN_EMAIL || 'superadmin@rentora.in',
     ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD || 'AdminSecure2026!',
