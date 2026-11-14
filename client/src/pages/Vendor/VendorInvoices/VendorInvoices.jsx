@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useVendor } from '../../../context/VendorContext';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
+import api from '../../../services/api';
 import './VendorInvoices.css';
 
 export default function VendorInvoices() {
@@ -66,11 +67,9 @@ export default function VendorInvoices() {
   useEffect(() => {
     const token = sessionStorage.getItem('rentora_token');
     if (token) {
-      fetch('/api/v1/invoices/vendor', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then((res) => res.json())
-        .then((resData) => {
+      api.get('/invoices/vendor')
+        .then((res) => {
+          const resData = res.data;
           if (resData.success && Array.isArray(resData.data)) {
             setInvoices(formatInvoiceList(resData.data));
           }
@@ -236,7 +235,8 @@ export default function VendorInvoices() {
                             onClick={() => {
                               const token = sessionStorage.getItem('rentora_token');
                               const invId = (inv.rawInvoice && inv.rawInvoice.id) ? inv.rawInvoice.id : inv.id;
-                              const printUrl = `/api/v1/invoices/${invId}/html${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+                              const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+                              const printUrl = `${baseUrl}/invoices/${invId}/html${token ? `?token=${encodeURIComponent(token)}` : ''}`;
                               window.open(printUrl, '_blank');
                             }}
                             className="btn-v-action-view"

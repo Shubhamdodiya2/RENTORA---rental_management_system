@@ -24,6 +24,7 @@ import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBa
 import RentalTimeline from '../../../components/CustomerLayout/RentalTimeline';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
 import { useAuth } from '../../../context/AuthContext';
+import api from '../../../services/api';
 import './MyRentals.css';
 
 const TABS = ['All', 'Active', 'Return Scheduled', 'Completed', 'Cancelled'];
@@ -42,11 +43,9 @@ export default function MyRentals() {
     const token = sessionStorage.getItem('rentora_token');
 
     if (token) {
-      fetch('/api/v1/bookings/my', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then((res) => res.json())
-        .then((resData) => {
+      api.get('/bookings/my')
+        .then((res) => {
+          const resData = res.data;
           let list = [];
           if (resData.success) {
             list = resData.data?.results || resData.data?.rows || (Array.isArray(resData.data) ? resData.data : []);

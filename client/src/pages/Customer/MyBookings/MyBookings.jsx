@@ -65,11 +65,9 @@ export default function MyBookings() {
   const loadMyBookings = () => {
     const token = sessionStorage.getItem('rentora_token');
     if (token) {
-      fetch('/api/v1/bookings/my', {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then((res) => res.json())
-        .then((resData) => {
+      api.get('/bookings/my')
+        .then((res) => {
+          const resData = res.data;
           let list = [];
           if (resData.success) {
             list = resData.data?.results || resData.data?.rows || (Array.isArray(resData.data) ? resData.data : []);

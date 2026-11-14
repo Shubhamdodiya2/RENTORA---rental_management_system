@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Printer, Download, X, ShieldCheck, FileText, Store, CheckCircle2, QrCode, Lock } from 'lucide-react';
 import Logo from '../Logo/Logo';
+import api from '../../services/api';
 import './DocumentModal.css';
 
 export default function DocumentModal({
@@ -23,20 +24,15 @@ export default function DocumentModal({
       
       let endpoint = null;
       if (type === 'quotation' || docId.startsWith('QUO-')) {
-        endpoint = `/api/v1/quotations/${encodeURIComponent(docId)}`;
+        endpoint = `/quotations/${encodeURIComponent(docId)}`;
       } else if (type === 'invoice' || docId.startsWith('INV-') || isUUID) {
-        endpoint = isUUID ? `/api/v1/invoices/${docId}` : `/api/v1/invoices/number/${encodeURIComponent(docId)}`;
+        endpoint = isUUID ? `/invoices/${docId}` : `/invoices/number/${encodeURIComponent(docId)}`;
       }
 
       if (endpoint) {
-        fetch(endpoint, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        })
+        api.get(endpoint)
           .then((res) => {
-            if (!res.ok) throw new Error('Document not found');
-            return res.json();
-          })
-          .then((resData) => {
+            const resData = res.data;
             if (resData.success && resData.data) {
               setDocData(resData.data);
             }
@@ -59,7 +55,8 @@ export default function DocumentModal({
     const token = sessionStorage.getItem('rentora_token');
     const tokenParam = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';
     if (docData && docData.id && (type === 'invoice' || docData.invoiceNumber)) {
-      window.open(`/api/v1/invoices/${docData.id}/html${tokenParam}`, '_blank');
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+      window.open(`${baseUrl}/invoices/${docData.id}/html${tokenParam}`, '_blank');
     } else {
       window.print();
     }

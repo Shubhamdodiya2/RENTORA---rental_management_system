@@ -28,6 +28,7 @@ import {
 } from '../../../data/customerMockData';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
+import api from '../../../services/api';
 import './DashboardOverview.css';
 
 export default function DashboardOverview() {
@@ -46,18 +47,18 @@ export default function DashboardOverview() {
     const token = sessionStorage.getItem('rentora_token');
 
     const fetches = [
-      fetch('/api/v1/products')
-        .then((r) => r.json())
+      api.get('/products')
+        .then((r) => r.data)
         .catch(() => null)
     ];
 
     if (token) {
       fetches.push(
-        fetch('/api/v1/bookings/my', { headers: { Authorization: `Bearer ${token}` } })
-          .then((r) => r.json())
+        api.get('/bookings/my')
+          .then((r) => r.data)
           .catch(() => null),
-        fetch('/api/v1/invoices/my', { headers: { Authorization: `Bearer ${token}` } })
-          .then((r) => r.json())
+        api.get('/invoices/my')
+          .then((r) => r.data)
           .catch(() => null)
       );
     }

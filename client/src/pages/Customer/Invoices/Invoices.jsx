@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import RentalStatusBadge from '../../../components/CustomerLayout/RentalStatusBadge';
 import DocumentModal from '../../../components/CustomerLayout/DocumentModal';
+import api from '../../../services/api';
 import './Invoices.css';
 
 export default function Invoices() {
@@ -31,11 +32,9 @@ export default function Invoices() {
     }
 
     setLoading(true);
-    fetch('/api/v1/invoices/my', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => res.json())
-      .then((resData) => {
+    api.get('/invoices/my')
+      .then((res) => {
+        const resData = res.data;
         if (resData.success && Array.isArray(resData.data)) {
           const mapped = resData.data.map((inv) => ({
             id: inv.id,
@@ -209,7 +208,8 @@ export default function Invoices() {
                             const invId = inv.rawInvoice?.id || inv.id;
                             if (invId) {
                               const tokenQuery = token ? `?token=${encodeURIComponent(token)}&print=true` : '?print=true';
-                              window.open(`/api/v1/invoices/${invId}/html${tokenQuery}`, '_blank');
+                              const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+                              window.open(`${baseUrl}/invoices/${invId}/html${tokenQuery}`, '_blank');
                             } else {
                               setSelectedDoc({ type: 'invoice', id: inv.id, data: inv.rawInvoice || inv });
                             }
