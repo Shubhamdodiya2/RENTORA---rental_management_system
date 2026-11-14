@@ -80,7 +80,7 @@ export default function VendorSidebar({
           {!isCollapsed ? (
             <Link to="/vendor/dashboard" className="vendor-logo-link" onClick={onClose}>
               <div className="flex items-center gap-2">
-                <Logo size="normal" showTagline={false} />
+                <Logo variant="vendor-sidebar" showTagline={false} />
                 <span className="vendor-portal-badge">VENDOR</span>
               </div>
             </Link>

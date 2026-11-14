@@ -26,6 +26,20 @@ export default function Logo({ size = 'md', className = '', variant = 'default' 
     );
   }
 
+  if (variant === 'white-badge' || variant === 'vendor-sidebar') {
+    return (
+      <div className={`rentora-logo-container group ${className}`}>
+        <div className="rentora-logo-badge">
+          <img
+            src={rentoraLogo}
+            alt="Rentora Logo"
+            className="h-8 sm:h-9 w-auto object-contain"
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`rentora-logo-container group ${className}`}>
       <img

@@ -29,3 +29,19 @@
 .rentora-logo-footer-card:hover {
   transform: scale(1.04);
 }
+
+.rentora-logo-badge {
+  background-color: #ffffff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rentora-logo-badge:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
